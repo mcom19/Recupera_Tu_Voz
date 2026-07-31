@@ -653,7 +653,7 @@ class _RecordVoiceScreenState extends State<RecordVoiceScreen>
           const SizedBox(height: 4),
 
           Text(
-            _formatTime(_recSeconds) + ' grabados',
+            '${_formatTime(_recSeconds)} grabados',
             style: TextStyle(color: c.textDim, fontSize: 13),
           ),
 

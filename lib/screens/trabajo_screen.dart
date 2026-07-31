@@ -327,7 +327,11 @@ class _PracticarScreenState extends State<_PracticarScreen> {
     if (_sessionId != null) {
       http.patch(
         Uri.parse('$kServerUrl/exercises/sesiones/$_sessionId/cerrar'),
-        headers: {'Authorization': 'Bearer ${widget.token}', 'Content-Type': 'application/json'},
+        headers: {
+          'Authorization': 'Bearer ${widget.token}',
+          'Content-Type': 'application/json',
+          ...kNgrokHeaders,
+        },
       ).catchError((_) {});
     }
     _recorder.dispose();
@@ -337,6 +341,7 @@ class _PracticarScreenState extends State<_PracticarScreen> {
   Map<String, String> get _h => {
     'Authorization': 'Bearer ${widget.token}',
     'Content-Type': 'application/json',
+    ...kNgrokHeaders,
   };
 
   Future<void> _abrirSesion() async {
@@ -361,8 +366,10 @@ class _PracticarScreenState extends State<_PracticarScreen> {
     if (_sessionId == null || _recording) return;
     final hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Permiso de micrófono denegado')));
+      }
       return;
     }
     setState(() { _recording = true; _feedback = null; _lastScore = null; });
@@ -385,6 +392,7 @@ class _PracticarScreenState extends State<_PracticarScreen> {
         Uri.parse('$kServerUrl/exercises/sesiones/$_sessionId/intentos'),
       )
         ..headers['Authorization'] = 'Bearer ${widget.token}'
+        ..headers.addAll(kNgrokHeaders)
         ..fields['word'] = word
         ..files.add(await http.MultipartFile.fromPath('audio', path, filename: 'intento.wav'));
 

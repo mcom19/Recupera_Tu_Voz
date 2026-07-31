@@ -170,6 +170,7 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
       final uri = Uri.parse('$kServerUrl/lipreading/speak');
       final request = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer $token'
+        ..headers.addAll(kNgrokHeaders)
         ..files.add(await http.MultipartFile.fromPath('video', videoFile.path));
 
       final streamed = await request.send().timeout(const Duration(seconds: 120));
@@ -311,11 +312,11 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(
+              child: const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
                   Text('Reconociendo...', style: TextStyle(color: Colors.white, fontSize: 14)),
                 ],
               ),

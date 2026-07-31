@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Planificador Semanal</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 24px 16px; }
+  .header h1 { font-size: 1.4rem; font-weight: 700; }
+  .header p { font-size: 0.85rem; opacity: 0.85; margin-top: 4px; }
+  .week-nav { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+  .week-nav button { background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.9rem; }
+  .week-nav button:hover { background: rgba(255,255,255,0.35); }
+  .week-label { font-weight: 600; font-size: 0.95rem; }
+
+  /* FASE TOGGLE */
+  .fase-bar { background: white; border-bottom: 1px solid #e2e8f0; padding: 10px 24px; display: flex; align-items: center; gap: 12px; }
+  .fase-bar span { font-size: 0.8rem; color: #718096; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .fase-btn { padding: 6px 14px; border-radius: 20px; border: 2px solid #e2e8f0; background: white; cursor: pointer; font-size: 0.82rem; font-weight: 600; color: #718096; transition: all 0.2s; }
+  .fase-btn.active { border-color: #667eea; background: #667eea; color: white; }
+
+  /* TABS */
+  .tabs { display: flex; background: white; border-bottom: 2px solid #e2e8f0; padding: 0 24px; overflow-x: auto; }
+  .tab { padding: 12px 18px; cursor: pointer; font-size: 0.88rem; font-weight: 600; color: #718096; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; transition: all 0.2s; }
+  .tab.active { color: #667eea; border-bottom-color: #667eea; }
+  .tab:hover { color: #667eea; }
+
+  /* CONTENT */
+  .content { padding: 20px 24px; max-width: 900px; margin: 0 auto; }
+
+  /* HOY */
+  .hoy-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .hoy-header h2 { font-size: 1.2rem; font-weight: 700; color: #2d3748; }
+  .hoy-header .fecha { font-size: 0.85rem; color: #718096; }
+
+  .habit-strip { display: flex; gap: 10px; margin-bottom: 20px; }
+  .habit-chip { display: flex; align-items: center; gap: 8px; background: white; border-radius: 12px; padding: 10px 14px; border: 2px solid #e2e8f0; flex: 1; cursor: pointer; transition: all 0.2s; }
+  .habit-chip.done { border-color: #48bb78; background: #f0fff4; }
+  .habit-chip .habit-icon { font-size: 1.2rem; }
+  .habit-chip .habit-text { font-size: 0.8rem; font-weight: 600; color: #4a5568; }
+  .habit-chip.done .habit-text { color: #276749; }
+
+  .time-blocks { display: flex; flex-direction: column; gap: 8px; }
+  .block { background: white; border-radius: 12px; padding: 14px 16px; border-left: 4px solid #e2e8f0; display: flex; align-items: flex-start; gap: 14px; transition: all 0.2s; }
+  .block.done { opacity: 0.6; }
+  .block .time { font-size: 0.78rem; color: #718096; font-weight: 700; min-width: 65px; padding-top: 2px; }
+  .block .info { flex: 1; }
+  .block .info .label { font-size: 0.85rem; font-weight: 700; }
+  .block .info .desc { font-size: 0.78rem; color: #718096; margin-top: 3px; }
+  .block .check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #cbd5e0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; transition: all 0.2s; flex-shrink: 0; }
+  .block .check.checked { background: #48bb78; border-color: #48bb78; color: white; }
+
+  /* SEMANA */
+  .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  @media (max-width: 700px) { .week-grid { grid-template-columns: repeat(2, 1fr); } }
+  .day-card { background: white; border-radius: 12px; padding: 12px; border: 2px solid #e2e8f0; }
+  .day-card.today { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.15); }
+  .day-name { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #718096; margin-bottom: 8px; }
+  .day-card.today .day-name { color: #667eea; }
+  .day-block { border-radius: 8px; padding: 6px 8px; margin-bottom: 5px; }
+  .day-block .db-label { font-size: 0.72rem; font-weight: 700; }
+  .day-block .db-time { font-size: 0.68rem; opacity: 0.75; margin-top: 1px; }
+
+  /* Colores por tipo */
+  .c-aws    { background: #EBF8FF; border-left: 3px solid #3182CE; }
+  .c-tbs    { background: #F0FFF4; border-left: 3px solid #38A169; }
+  .c-ia     { background: #FAF5FF; border-left: 3px solid #805AD5; }
+  .c-lip    { background: #FFFAF0; border-left: 3px solid #DD6B20; }
+  .c-mkt    { background: #FFF5F5; border-left: 3px solid #E53E3E; }
+  .c-val    { background: #E6FFFA; border-left: 3px solid #319795; }
+  .c-sta    { background: #FFF0F3; border-left: 3px solid #D53F8C; }
+  .c-fam    { background: #F7FAFC; border-left: 3px solid #A0AEC0; }
+  .c-aws .db-label    { color: #2B6CB0; }
+  .c-tbs .db-label    { color: #276749; }
+  .c-ia  .db-label    { color: #553C9A; }
+  .c-lip .db-label    { color: #C05621; }
+  .c-mkt .db-label    { color: #C53030; }
+  .c-val .db-label    { color: #285E61; }
+  .c-sta .db-label    { color: #97266D; }
+  .c-fam .db-label    { color: #4A5568; }
+
+  /* HÁBITOS TRACKER */
+  .habit-tracker { background: white; border-radius: 16px; padding: 20px; }
+  .habit-tracker h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; color: #2d3748; }
+  .habit-grid { display: grid; grid-template-columns: 160px repeat(7, 1fr); gap: 4px; font-size: 0.75rem; }
+  .hg-header { text-align: center; font-weight: 700; color: #718096; padding: 4px; }
+  .hg-label { font-weight: 600; color: #4a5568; padding: 8px 4px; display: flex; align-items: center; gap: 6px; }
+  .hg-cell { width: 32px; height: 32px; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; margin: auto; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; transition: all 0.2s; }
+  .hg-cell.done { background: #667eea; border-color: #667eea; color: white; }
+  .hg-cell.today-col { border-color: #667eea; }
+
+  /* PROGRESO */
+  .prog-section { margin-bottom: 24px; }
+  .prog-section h3 { font-size: 0.9rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #718096; margin-bottom: 12px; }
+  .prog-item { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
+  .prog-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .prog-item-name { font-size: 0.88rem; font-weight: 700; }
+  .prog-item-pct { font-size: 0.82rem; font-weight: 700; color: #718096; }
+  .prog-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+  .prog-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .prog-controls button { padding: 4px 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-size: 0.78rem; color: #4a5568; transition: all 0.15s; }
+  .prog-controls button:hover { background: #edf2f7; }
+
+  .project-card { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; border-left: 4px solid #e2e8f0; }
+  .project-card-header { display: flex; justify-content: space-between; align-items: center; }
+  .project-card-name { font-size: 0.88rem; font-weight: 700; }
+  .status-badge { font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; cursor: pointer; }
+  .status-planificando { background: #EDF2F7; color: #4A5568; }
+  .status-en-curso { background: #EBF8FF; color: #2B6CB0; }
+  .status-bloqueado { background: #FFF5F5; color: #C53030; }
+  .status-completado { background: #F0FFF4; color: #276749; }
+  .project-card .desc { font-size: 0.78rem; color: #718096; margin-top: 6px; }
+  .project-card .dia { font-size: 0.75rem; color: #805AD5; font-weight: 600; margin-top: 4px; }
+
+  /* LEYENDA */
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; color: #4a5568; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* MOTIVACION */
+  .motivacion { background: linear-gradient(135deg, #667eea22, #764ba222); border: 1px solid #667eea44; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; font-size: 0.85rem; color: #553C9A; font-weight: 500; line-height: 1.5; }
+
+  /* UTIL */
+  .section { margin-bottom: 20px; }
+  .empty { text-align: center; color: #a0aec0; padding: 30px; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🗓 Mi Planificador</h1>
+  <p>Hábitos · Cursos · Proyectos · Familia</p>
+  <div class="week-nav">
+    <button onclick="changeWeek(-1)">◀</button>
+    <span class="week-label" id="weekLabel"></span>
+    <button onclick="changeWeek(1)">▶</button>
+  </div>
+</div>
+
+<div class="fase-bar">
+  <span>Fase:</span>
+  <button class="fase-btn" id="btn-escuela" onclick="setFase('escuela')">🏫 Escuela de verano</button>
+  <button class="fase-btn" id="btn-verano" onclick="setFase('verano')">☀️ Verano en casa</button>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('hoy')" id="tab-hoy">📅 Hoy</div>
+  <div class="tab" onclick="showTab('semana')" id="tab-semana">📆 Semana</div>
+  <div class="tab" onclick="showTab('habitos')" id="tab-habitos">✅ Hábitos</div>
+  <div class="tab" onclick="showTab('progreso')" id="tab-progreso">📊 Progreso</div>
+</div>
+
+<div class="content">
+
+  <!-- ===== HOY ===== -->
+  <div id="pane-hoy">
+    <div class="hoy-header">
+      <h2 id="hoy-titulo">Hoy</h2>
+      <span class="fecha" id="hoy-fecha"></span>
+    </div>
+
+    <div class="motivacion" id="frase-dia">💪 Cada mañana a las 6:45 empiezas a construir tu futuro. Un pequeño paso hoy es un gran avance mañana.</div>
+
+    <div class="habit-strip">
+      <div class="habit-chip" id="chip-levantarse" onclick="toggleHabitToday('levantarse')">
+        <span class="habit-icon">🌅</span>
+        <div>
+          <div class="habit-text">Levantarse 6:45</div>
+        </div>
+      </div>
+      <div class="habit-chip" id="chip-planning" onclick="toggleHabitToday('planning')">
+        <span class="habit-icon">📋</span>
+        <div>
+          <div class="habit-text">Revisar plan</div>
+        </div>
+      </div>
+      <div class="habit-chip" id="chip-agua" onclick="toggleHabitToday('agua')">
+        <span class="habit-icon">💧</span>
+        <div>
+          <div class="habit-text">Hidratación</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="time-blocks" id="bloques-hoy"></div>
+  </div>
+
+  <!-- ===== SEMANA ===== -->
+  <div id="pane-semana" style="display:none">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#3182CE"></div>AWS</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#38A169"></div>TBS</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#805AD5"></div>Bootcamp IA</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#DD6B20"></div>Lipreading</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E53E3E"></div>Marketplace</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#319795"></div>App Vales</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#D53F8C"></div>Startup</div>
+    </div>
+    <div class="week-grid" id="week-grid"></div>
+  </div>
+
+  <!-- ===== HÁBITOS ===== -->
+  <div id="pane-habitos" style="display:none">
+    <div class="habit-tracker">
+      <h3>🌅 Tracker de hábitos — Últimas 4 semanas</h3>
+      <div style="overflow-x:auto">
+        <div class="habit-grid" id="habit-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PROGRESO ===== -->
+  <div id="pane-progreso" style="display:none">
+    <div class="prog-section">
+      <h3>📚 Cursos</h3>
+      <div id="cursos-list"></div>
+    </div>
+    <div class="prog-section">
+      <h3>🚀 Proyectos</h3>
+      <div id="proyectos-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const DIAS_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const DIAS_FULL = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+const FRASES = [
+  '💪 Cada mañana a las 6:45 empiezas a construir tu futuro.',
+  '🌟 Eres madre, emprendedora y estudiante. Eso es extraordinario.',
+  '🎯 El foco de hoy es el logro de mañana.',
+  '☕ Una taza de café y una hora de código valen más que una semana de intención.',
+  '🌈 No tienes que hacerlo todo hoy. Solo avanza un paso.',
+  '💡 Tus proyectos están cambiando vidas. Sigue.',
+  '🧠 Cada módulo del bootcamp es una puerta que se abre.',
+  '❤️ Cuidarte a ti misma es cuidar a tus hijos.'
+];
+
+// Bloques por día de la semana (0=Dom,1=Lun,...,6=Sáb)
+// FASE ESCUELA DE VERANO: niños se levantan a las 8:00
+const BLOQUES_ESCUELA = {
+  0: [ // Domingo
+    {time:'9:00-10:00', label:'Revisión semanal', desc:'Planifica la semana, revisa objetivos', color:'c-fam', key:'d'},
+    {time:'10:00-12:00', label:'Tiempo familia', desc:'Actividad con los niños', color:'c-fam', key:'e'},
+    {time:'12:00-14:00', label:'Casa & comida', desc:'Tareas del hogar', color:'c-fam', key:'f'},
+  ],
+  1: [ // Lunes
+    {time:'6:45-8:00', label:'🌅 Bloque silencioso — AWS', desc:'Los niños duermen · 1h15 tuyas', color:'c-aws', key:'a'},
+    {time:'8:00-9:30', label:'Desayuno + llevar niños', desc:'Rutina familiar, escuela de verano', color:'c-fam', key:'b'},
+    {time:'9:30-12:00', label:'👄 Lipreading Dualiza', desc:'Bloque concentrado — niños en el cole', color:'c-lip', key:'c'},
+    {time:'12:00-13:30', label:'☁️ Curso AWS', desc:'Módulo del día — toma notas', color:'c-aws', key:'cc'},
+    {time:'13:30-15:00', label:'Comida + recoger niños', desc:'', color:'c-fam', key:'d'},
+    {time:'15:00-16:00', label:'Familia & descanso', desc:'', color:'c-fam', key:'e'},
+    {time:'16:00-17:00', label:'Casa', desc:'Tareas del hogar', color:'c-fam', key:'f'},
+  ],
+  2: [ // Martes
+    {time:'6:45-8:00', label:'🌅 Bloque silencioso — TBS', desc:'Los niños duermen · 1h15 tuyas', color:'c-tbs', key:'a'},
+    {time:'8:00-9:30', label:'Desayuno + llevar niños', desc:'Rutina familiar, escuela de verano', color:'c-fam', key:'b'},
+    {time:'9:30-12:00', label:'🛒 Marketplace Angular', desc:'Sprint de desarrollo — niños en el cole', color:'c-mkt', key:'c'},
+    {time:'12:00-13:30', label:'📗 Curso TBS', desc:'Módulo del día — practica', color:'c-tbs', key:'cc'},
+    {time:'13:30-15:00', label:'Comida + recoger niños', desc:'', color:'c-fam', key:'d'},
+    {time:'15:00-16:00', label:'Familia & descanso', desc:'', color:'c-fam', key:'e'},
+    {time:'16:00-17:00', label:'Casa', desc:'', color:'c-fam', key:'f'},
+  ],
+  3: [ // Miércoles
+    {time:'6:45-8:00', label:'🌅 Bloque silencioso — Bootcamp IA', desc:'Los niños duermen · el mejor momento para IA', color:'c-ia', key:'a'},
+    {time:'8:00-9:30', label:'Desayuno + llevar niños', desc:'Rutina familiar, escuela de verano', color:'c-fam', key:'b'},
+    {time:'9:30-11:30', label:'🤖 Bootcamp IA', desc:'Sesión intensa — no interrupciones', color:'c-ia', key:'c'},
+    {time:'11:30-13:30', label:'🎟 App Vales', desc:'Desarrollo de la app de premios', color:'c-val', key:'cc'},
+    {time:'13:30-15:00', label:'Comida + recoger niños', desc:'', color:'c-fam', key:'d'},
+    {time:'15:00-16:00', label:'Familia & descanso', desc:'', color:'c-fam', key:'e'},
+    {time:'16:00-17:00', label:'Casa', desc:'', color:'c-fam', key:'f'},
+  ],
+  4: [ // Jueves
+    {time:'6:45-8:00', label:'🌅 Bloque silencioso — AWS', desc:'Los niños duermen · labs y práctica', color:'c-aws', key:'a'},
+    {time:'8:00-9:30', label:'Desayuno + llevar niños', desc:'Rutina familiar, escuela de verano', color:'c-fam', key:'b'},
+    {time:'9:30-11:30', label:'🖥 Startup Escritorio', desc:'Avance en la startup de gestión', color:'c-sta', key:'c'},
+    {time:'11:30-13:30', label:'☁️ Curso AWS', desc:'Módulo + laboratorio', color:'c-aws', key:'cc'},
+    {time:'13:30-15:00', label:'Comida + recoger niños', desc:'', color:'c-fam', key:'d'},
+    {time:'15:00-16:00', label:'Familia & descanso', desc:'', color:'c-fam', key:'e'},
+    {time:'16:00-17:00', label:'Casa', desc:'', color:'c-fam', key:'f'},
+  ],
+  5: [ // Viernes
+    {time:'6:45-8:00', label:'🌅 Bloque silencioso — TBS', desc:'Los niños duermen · 1h15 tuyas', color:'c-tbs', key:'a'},
+    {time:'8:00-9:30', label:'Desayuno + llevar niños', desc:'Rutina familiar, escuela de verano', color:'c-fam', key:'b'},
+    {time:'9:30-11:30', label:'👄 Lipreading Dualiza', desc:'Revisión y entregables', color:'c-lip', key:'c'},
+    {time:'11:30-13:00', label:'📗 Curso TBS', desc:'Practica ejercicios del curso', color:'c-tbs', key:'cc'},
+    {time:'13:00-13:30', label:'Revisión semanal rápida', desc:'¿Qué has avanzado? ¿Qué queda?', color:'c-fam', key:'d'},
+    {time:'13:30-15:00', label:'Comida + recoger niños', desc:'', color:'c-fam', key:'e'},
+    {time:'15:00+', label:'¡Viernes libre!', desc:'Familia y descanso 🎉', color:'c-fam', key:'f'},
+  ],
+  6: [ // Sábado
+    {time:'6:45-8:00', label:'🌅 Bloque silencioso — Bootcamp IA', desc:'Los niños duermen · aprovecha la calma', color:'c-ia', key:'a'},
+    {time:'8:00-9:30', label:'Desayuno de sábado en familia', desc:'Sin prisas, sin cole', color:'c-fam', key:'b'},
+    {time:'9:30-11:30', label:'🤖 Bootcamp IA', desc:'Sesión de sábado — importante', color:'c-ia', key:'c'},
+    {time:'11:30-13:00', label:'🛒 Marketplace Angular', desc:'Sprint de desarrollo', color:'c-mkt', key:'d'},
+    {time:'13:00+', label:'Tarde libre', desc:'Familia, naturaleza, descanso', color:'c-fam', key:'e'},
+  ],
+};
+
+// FASE VERANO EN CASA (desde 4 julio): niños se levantan a las 9:30 — ¡2h45 de bloque dorado!
+const BLOQUES_VERANO = {
+  0: [
+    {time:'9:30-10:30', label:'Revisión semanal', desc:'Planifica la semana con café ☕', color:'c-fam', key:'d'},
+    {time:'10:30+', label:'Día familiar', desc:'Actividades con los niños', color:'c-fam', key:'e'},
+  ],
+  1: [
+    {time:'6:45-9:30', label:'🌅 BLOQUE DORADO — AWS + Lipreading', desc:'2h45 de silencio total · el mejor momento del día', color:'c-aws', key:'a'},
+    {time:'9:30-11:00', label:'Rutina familiar', desc:'Desayuno juntos, sin prisas', color:'c-fam', key:'b'},
+    {time:'11:00-13:00', label:'👄 Lipreading Dualiza', desc:'Con niños cerca — tareas más mecánicas', color:'c-lip', key:'c'},
+    {time:'13:00-14:30', label:'Comida familiar', desc:'', color:'c-fam', key:'d'},
+    {time:'16:00-17:00', label:'Casa & recados', desc:'', color:'c-fam', key:'e'},
+  ],
+  2: [
+    {time:'6:45-9:30', label:'🌅 BLOQUE DORADO — TBS + Marketplace', desc:'2h45 de silencio total · código limpio', color:'c-tbs', key:'a'},
+    {time:'9:30-11:00', label:'Rutina familiar', desc:'Desayuno juntos', color:'c-fam', key:'b'},
+    {time:'11:00-13:00', label:'🛒 Marketplace Angular', desc:'Continúa el sprint de desarrollo', color:'c-mkt', key:'c'},
+    {time:'13:00-14:30', label:'Comida familiar', desc:'', color:'c-fam', key:'d'},
+    {time:'16:00-17:00', label:'Casa & recados', desc:'', color:'c-fam', key:'e'},
+  ],
+  3: [
+    {time:'6:45-9:30', label:'🌅 BLOQUE DORADO — Bootcamp IA', desc:'2h45 · el bootcamp necesita concentración máxima', color:'c-ia', key:'a'},
+    {time:'9:30-11:00', label:'Rutina familiar', desc:'Desayuno juntos', color:'c-fam', key:'b'},
+    {time:'11:00-13:00', label:'🎟 App Vales', desc:'Desarrollo de la app de premios', color:'c-val', key:'c'},
+    {time:'13:00-14:30', label:'Comida familiar', desc:'', color:'c-fam', key:'d'},
+    {time:'16:00-17:00', label:'Casa & recados', desc:'', color:'c-fam', key:'e'},
+  ],
+  4: [
+    {time:'6:45-9:30', label:'🌅 BLOQUE DORADO — AWS + Startup', desc:'2h45 · labs, arquitectura, decisiones clave', color:'c-aws', key:'a'},
+    {time:'9:30-11:00', label:'Rutina familiar', desc:'Desayuno juntos', color:'c-fam', key:'b'},
+    {time:'11:00-13:00', label:'🖥 Startup Escritorio', desc:'Avance de la startup', color:'c-sta', key:'c'},
+    {time:'13:00-14:30', label:'Comida familiar', desc:'', color:'c-fam', key:'d'},
+    {time:'16:00-17:00', label:'Casa & recados', desc:'', color:'c-fam', key:'e'},
+  ],
+  5: [
+    {time:'6:45-9:30', label:'🌅 BLOQUE DORADO — TBS + Revisión', desc:'2h45 · cierra la semana con fuerza', color:'c-tbs', key:'a'},
+    {time:'9:30-11:00', label:'Rutina familiar', desc:'Desayuno de viernes 🥐', color:'c-fam', key:'b'},
+    {time:'11:00-12:30', label:'👄 Lipreading Dualiza', desc:'Revisión y entregables de la semana', color:'c-lip', key:'c'},
+    {time:'12:30-13:00', label:'Revisión semanal rápida', desc:'¿Qué has avanzado? ¿Qué queda?', color:'c-fam', key:'d'},
+    {time:'13:00+', label:'¡Viernes libre!', desc:'Familia total 🎉', color:'c-fam', key:'e'},
+  ],
+  6: [
+    {time:'6:45-9:30', label:'🌅 BLOQUE DORADO — Bootcamp IA + Marketplace', desc:'2h45 · sábado productivo antes de que todo despierte', color:'c-ia', key:'a'},
+    {time:'9:30-11:00', label:'Desayuno de sábado', desc:'Tortitas, juego, sin pantallas', color:'c-fam', key:'b'},
+    {time:'11:00+', label:'Sábado en familia', desc:'Parque, piscina, cine, naturaleza...', color:'c-fam', key:'c'},
+  ],
+};
+
+const CURSOS = [
+  {id:'aws', nombre:'Curso AWS', color:'#3182CE', emoji:'☁️'},
+  {id:'tbs', nombre:'Curso TBS', color:'#38A169', emoji:'📗'},
+  {id:'ia', nombre:'Bootcamp IA', color:'#805AD5', emoji:'🤖'},
+];
+
+const PROYECTOS = [
+  {id:'lip', nombre:'Lipreading Dualiza', emoji:'👄', color:'#DD6B20', desc:'IA para lectura de labios', dia:'Lun + Vie'},
+  {id:'mkt', nombre:'Marketplace Angular+Supabase', emoji:'🛒', color:'#E53E3E', desc:'Venta de recursos educativos', dia:'Mar + Sáb'},
+  {id:'val', nombre:'App Vales Adolescentes', emoji:'🎟', color:'#319795', desc:'Premio por comportamientos positivos', dia:'Miércoles'},
+  {id:'sta', nombre:'Startup Gestión Escritorio', emoji:'🖥', color:'#D53F8C', desc:'Herramienta de productividad', dia:'Jueves'},
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let state = JSON.parse(localStorage.getItem('planificador_state') || '{}');
+if (!state.fase) state.fase = 'escuela';
+if (!state.progCursos) state.progCursos = {aws:10, tbs:5, ia:0};
+if (!state.statusProyectos) state.statusProyectos = {lip:'en-curso', mkt:'planificando', val:'planificando', sta:'planificando'};
+if (!state.checks) state.checks = {};   // {YYYY-MM-DD_bloqueKey: bool}
+if (!state.habitos) state.habitos = {}; // {YYYY-MM-DD_nombre: bool}
+if (!state.weekOffset) state.weekOffset = 0;
+
+function save() { localStorage.setItem('planificador_state', JSON.stringify(state)); }
+
+// ============================================================
+// UTILS
+// ============================================================
+function getMonday(d) {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = (day === 0) ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+function fmtDate(d) { return d.toISOString().slice(0,10); }
+function todayStr() { return fmtDate(new Date()); }
+
+function getWeekDays() {
+  const base = new Date();
+  base.setDate(base.getDate() + state.weekOffset * 7);
+  const mon = getMonday(base);
+  const days = [];
+  // Lun a Dom (índices 1..0 de la semana)
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon);
+    d.setDate(mon.getDate() + i);
+    days.push(d);
+  }
+  return days; // [Lun, Mar, Mié, Jue, Vie, Sáb, Dom]
+}
+
+function updateWeekLabel() {
+  const days = getWeekDays();
+  const opts = {day:'numeric', month:'short'};
+  document.getElementById('weekLabel').textContent =
+    days[0].toLocaleDateString('es-ES', opts) + ' – ' + days[6].toLocaleDateString('es-ES', opts);
+}
+
+function changeWeek(delta) {
+  state.weekOffset += delta;
+  save();
+  render();
+}
+
+function setFase(f) {
+  state.fase = f;
+  save();
+  document.getElementById('btn-escuela').classList.toggle('active', f === 'escuela');
+  document.getElementById('btn-verano').classList.toggle('active', f === 'verano');
+  renderHoy();
+  renderSemana();
+}
+
+// ============================================================
+// TABS
+// ============================================================
+const PANES = ['hoy','semana','habitos','progreso'];
+function showTab(t) {
+  PANES.forEach(p => {
+    document.getElementById('pane-'+p).style.display = p===t ? '' : 'none';
+    document.getElementById('tab-'+p).classList.toggle('active', p===t);
+  });
+}
+
+// ============================================================
+// HOY
+// ============================================================
+function renderHoy() {
+  const today = new Date();
+  const dow = today.getDay(); // 0=Dom
+  const dateStr = fmtDate(today);
+  const bloques = (state.fase === 'escuela' ? BLOQUES_ESCUELA : BLOQUES_VERANO)[dow] || [];
+
+  document.getElementById('hoy-titulo').textContent = DIAS_FULL[dow];
+  document.getElementById('hoy-fecha').textContent = today.toLocaleDateString('es-ES', {day:'numeric', month:'long', year:'numeric'});
+  document.getElementById('frase-dia').textContent = FRASES[Math.floor(Math.random()*FRASES.length)];
+
+  // Habit chips
+  ['levantarse','planning','agua'].forEach(h => {
+    const done = !!state.habitos[dateStr+'_'+h];
+    document.getElementById('chip-'+h).classList.toggle('done', done);
+  });
+
+  // Bloques
+  const container = document.getElementById('bloques-hoy');
+  if (bloques.length === 0) {
+    container.innerHTML = '<div class="empty">¡Día libre! Descansa y recarga energías. 🌿</div>';
+    return;
+  }
+  container.innerHTML = bloques.map(b => {
+    const k = dateStr + '_' + b.key;
+    const checked = !!state.checks[k];
+    return `<div class="block ${b.color} ${checked?'done':''}">
+      <div class="time">${b.time}</div>
+      <div class="info">
+        <div class="label">${b.label}</div>
+        ${b.desc ? `<div class="desc">${b.desc}</div>` : ''}
+      </div>
+      <div class="check ${checked?'checked':''}" onclick="toggleCheck('${k}', this.parentElement)">
+        ${checked ? '✓' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCheck(key, blockEl) {
+  state.checks[key] = !state.checks[key];
+  save();
+  const checked = state.checks[key];
+  blockEl.classList.toggle('done', checked);
+  const btn = blockEl.querySelector('.check');
+  btn.classList.toggle('checked', checked);
+  btn.textContent = checked ? '✓' : '';
+}
+
+function toggleHabitToday(h) {
+  const k = todayStr() + '_' + h;
+  state.habitos[k] = !state.habitos[k];
+  save();
+  document.getElementById('chip-'+h).classList.toggle('done', state.habitos[k]);
+  if (document.getElementById('pane-habitos').style.display !== 'none') renderHabitos();
+}
+
+// ============================================================
+// SEMANA
+// ============================================================
+function renderSemana() {
+  updateWeekLabel();
+  const days = getWeekDays(); // Lun..Dom
+  const bloqueMap = state.fase === 'escuela' ? BLOQUES_ESCUELA : BLOQUES_VERANO;
+  const todayStr_ = fmtDate(new Date());
+  const grid = document.getElementById('week-grid');
+
+  // Días order en el grid: Lun(1)..Dom(0)
+  const ORDER = [1,2,3,4,5,6,0]; // dow indices matching getWeekDays()
+  const dayObjs = days; // [Lun, Mar, ..., Dom]
+
+  grid.innerHTML = dayObjs.map((d, i) => {
+    const dow = d.getDay();
+    const ds = fmtDate(d);
+    const isToday = ds === todayStr_;
+    const bloques = bloqueMap[dow] || [];
+    return `<div class="day-card ${isToday?'today':''}">
+      <div class="day-name">${DIAS_ES[dow]} ${d.getDate()}</div>
+      ${bloques.filter(b=>b.color!=='c-fam').map(b =>
+        `<div class="day-block ${b.color}">
+          <div class="db-label">${b.label}</div>
+          <div class="db-time">${b.time}</div>
+        </div>`).join('')}
+      ${bloques.every(b=>b.color==='c-fam') ? '<div style="font-size:0.75rem;color:#a0aec0;text-align:center;padding:8px">🌿 Familia</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// HÁBITOS
+// ============================================================
+function renderHabitos() {
+  const habits = [
+    {id:'levantarse', label:'🌅 6:45 levantarse'},
+    {id:'planning', label:'📋 Revisar plan'},
+    {id:'agua', label:'💧 Hidratación'},
+  ];
+  const today = new Date();
+  const todayStr_ = fmtDate(today);
+
+  // Últimos 28 días — muestra las últimas 4 semanas completas (lun a dom)
+  const mon = getMonday(today);
+  const start = new Date(mon);
+  start.setDate(start.getDate() - 21); // 3 semanas atrás
+
+  // Construir 28 días
+  const allDays = [];
+  for (let i = 0; i < 28; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    allDays.push(d);
+  }
+
+  // Headers: semanas
+  const grid = document.getElementById('habit-grid');
+  let html = '<div class="hg-header" style="text-align:left;color:#4a5568;font-weight:700;">Hábito</div>';
+
+  // 28 días headers
+  allDays.forEach(d => {
+    const ds = fmtDate(d);
+    const isT = ds === todayStr_;
+    html += `<div class="hg-header" style="${isT?'color:#667eea':''}">
+      <div>${DIAS_ES[d.getDay()]}</div>
+      <div style="font-size:0.65rem">${d.getDate()}/${d.getMonth()+1}</div>
+    </div>`;
+  });
+
+  habits.forEach(h => {
+    html += `<div class="hg-label">${h.label}</div>`;
+    allDays.forEach(d => {
+      const ds = fmtDate(d);
+      const k = ds + '_' + h.id;
+      const done = !!state.habitos[k];
+      const isT = ds === todayStr_;
+      html += `<div class="hg-cell ${done?'done':''} ${isT&&!done?'today-col':''}"
+        onclick="toggleHabitCell('${k}')" title="${ds}">
+        ${done ? '✓' : ''}
+      </div>`;
+    });
+  });
+
+  grid.innerHTML = html;
+}
+
+function toggleHabitCell(k) {
+  state.habitos[k] = !state.habitos[k];
+  save();
+  renderHabitos();
+  // update chips if today
+  const [dateStr, habit] = k.split('_');
+  if (dateStr === todayStr() && document.getElementById('chip-'+habit)) {
+    document.getElementById('chip-'+habit).classList.toggle('done', state.habitos[k]);
+  }
+}
+
+// ============================================================
+// PROGRESO
+// ============================================================
+const STATUS_LABELS = {
+  'planificando': 'Planificando',
+  'en-curso': 'En curso',
+  'bloqueado': 'Bloqueado',
+  'completado': 'Completado',
+};
+
+function renderProgreso() {
+  // Cursos
+  const cursosList = document.getElementById('cursos-list');
+  cursosList.innerHTML = CURSOS.map(c => {
+    const pct = state.progCursos[c.id] || 0;
+    return `<div class="prog-item">
+      <div class="prog-item-header">
+        <div class="prog-item-name">${c.emoji} ${c.nombre}</div>
+        <div class="prog-item-pct">${pct}%</div>
+      </div>
+      <div class="prog-bar">
+        <div class="prog-fill" style="width:${pct}%;background:${c.color}"></div>
+      </div>
+      <div class="prog-controls">
+        <button onclick="changeProg('${c.id}',-5)">−5%</button>
+        <button onclick="changeProg('${c.id}',5)">+5%</button>
+        <button onclick="changeProg('${c.id}',10)">+10%</button>
+        <button onclick="changeProg('${c.id}',25)">+25%</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Proyectos
+  const proyList = document.getElementById('proyectos-list');
+  proyList.innerHTML = PROYECTOS.map(p => {
+    const status = state.statusProyectos[p.id] || 'planificando';
+    const nextStatus = {planificando:'en-curso', 'en-curso':'bloqueado', bloqueado:'completado', completado:'planificando'};
+    return `<div class="project-card" style="border-left-color:${p.color}">
+      <div class="project-card-header">
+        <div class="project-card-name">${p.emoji} ${p.nombre}</div>
+        <div class="status-badge status-${status}" onclick="cycleStatus('${p.id}')" title="Click para cambiar estado">
+          ${STATUS_LABELS[status]}
+        </div>
+      </div>
+      <div class="desc">${p.desc}</div>
+      <div class="dia">📅 ${p.dia}</div>
+    </div>`;
+  }).join('');
+}
+
+function changeProg(id, delta) {
+  state.progCursos[id] = Math.max(0, Math.min(100, (state.progCursos[id]||0) + delta));
+  save();
+  renderProgreso();
+}
+
+function cycleStatus(id) {
+  const order = ['planificando','en-curso','bloqueado','completado'];
+  const cur = state.statusProyectos[id] || 'planificando';
+  const next = order[(order.indexOf(cur)+1) % order.length];
+  state.statusProyectos[id] = next;
+  save();
+  renderProgreso();
+}
+
+// ============================================================
+// RENDER ALL
+// ============================================================
+function render() {
+  updateWeekLabel();
+  renderHoy();
+  renderSemana();
+  renderHabitos();
+  renderProgreso();
+  document.getElementById('btn-escuela').classList.toggle('active', state.fase === 'escuela');
+  document.getElementById('btn-verano').classList.toggle('active', state.fase === 'verano');
+}
+
+render();
+</script>
+</body>
+</html>

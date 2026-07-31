@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# voice_backend: datos sensibles (audios de voz reales, BD con usuarios/hashes)
+voice_backend/__pycache__/
+voice_backend/**/__pycache__/
+voice_backend/voices/
+voice_backend/voice_app.db
+voice_backend/*.db
+voice_backend/.env

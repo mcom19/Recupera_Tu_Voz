@@ -114,6 +114,7 @@ class RolesService {
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer $token',
+    ...kNgrokHeaders,
   };
 
   Future<Map<String, dynamic>> getRoleInfo() async {
