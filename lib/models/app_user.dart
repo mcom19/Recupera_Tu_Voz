@@ -10,6 +10,10 @@ class AppUser {
   final bool    roleSet;
   final String? logopedaId;
   final String? logopedaName;
+  /// Local, no viene del backend: el paciente eligió "Más tarde" en vez de
+  /// vincularse con un logopeda al entrar. Evita que se le vuelva a forzar
+  /// la pantalla de vinculación; puede vincularse cuando quiera desde el perfil.
+  final bool logopedaSkipped;
 
   const AppUser({
     required this.token,
@@ -23,6 +27,7 @@ class AppUser {
     this.roleSet = false,
     this.logopedaId,
     this.logopedaName,
+    this.logopedaSkipped = false,
   });
 
   bool get isLogopeda => role == 'logopeda';
@@ -42,6 +47,7 @@ class AppUser {
     roleSet:       j['role_set']       as bool?   ?? false,
     logopedaId:    j['logopeda_id']    as String?,
     logopedaName:  j['logopeda_name']  as String?,
+    logopedaSkipped: j['logopeda_skipped'] as bool? ?? false,
   );
 
   Map<String, dynamic> toJson() => {
@@ -56,6 +62,7 @@ class AppUser {
     'role_set':       roleSet,
     'logopeda_id':    logopedaId,
     'logopeda_name':  logopedaName,
+    'logopeda_skipped': logopedaSkipped,
   };
 
   Map<String, dynamic> toJsonWithoutToken() => {
@@ -69,6 +76,7 @@ class AppUser {
     'role_set':       roleSet,
     'logopeda_id':    logopedaId,
     'logopeda_name':  logopedaName,
+    'logopeda_skipped': logopedaSkipped,
   };
 
   // ── copyWith ───────────────────────────────────────────────────
@@ -83,6 +91,7 @@ class AppUser {
     bool?   roleSet,
     Object? logopedaId   = _clear,
     Object? logopedaName = _clear,
+    bool?   logopedaSkipped,
   }) => AppUser(
     token:         token,
     userId:        userId,
@@ -95,5 +104,6 @@ class AppUser {
     roleSet:       roleSet       ?? this.roleSet,
     logopedaId:    identical(logopedaId,   _clear) ? this.logopedaId   : logopedaId   as String?,
     logopedaName:  identical(logopedaName, _clear) ? this.logopedaName : logopedaName as String?,
+    logopedaSkipped: logopedaSkipped ?? this.logopedaSkipped,
   );
 }
