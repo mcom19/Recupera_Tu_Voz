@@ -6,11 +6,16 @@ import '../../services/roles_service.dart';
 class PatientCodeScreen extends StatefulWidget {
   final AppUser user;
   final void Function(AppUser updatedUser) onLinked;
+  /// Si se indica, se muestra un botón "Más tarde" que permite continuar
+  /// sin vincularse ahora mismo. Se omite cuando la pantalla se usa desde
+  /// el perfil para añadir/cambiar el código (ahí no tiene sentido "saltar").
+  final VoidCallback? onSkip;
 
   const PatientCodeScreen({
     super.key,
     required this.user,
     required this.onLinked,
+    this.onSkip,
   });
 
   @override
@@ -50,7 +55,10 @@ class _PatientCodeScreenState extends State<PatientCodeScreen> {
       );
 
       if (!mounted) return;
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      // Si esta pantalla se abrió como pantalla obligatoria de onboarding
+      // (AppRouter) no hay nada que hacer pop; si se abrió desde el perfil
+      // (para vincular o cambiar código) sí hay que cerrarla.
+      if (Navigator.of(context).canPop()) Navigator.of(context).pop();
       widget.onLinked(updated);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -157,10 +165,32 @@ class _PatientCodeScreenState extends State<PatientCodeScreen> {
               const SizedBox(height: 12),
               Center(
                 child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => Navigator.of(context).maybePop(),
                   child: const Text('Volver a elegir perfil'),
                 ),
               ),
+              if (widget.onSkip != null) ...[
+                const SizedBox(height: 4),
+                Center(
+                  child: TextButton(
+                    onPressed: _loading ? null : widget.onSkip,
+                    child: Text(
+                      'Más tarde',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Center(
+                    child: Text(
+                      'Podrás vincularte con tu logopeda cuando quieras desde tu perfil.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

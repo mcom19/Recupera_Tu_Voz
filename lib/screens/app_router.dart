@@ -74,6 +74,10 @@ class _AppRouterState extends State<AppRouter> {
     setState(() => _user = updated);
   }
 
+  void _onSkipLogopeda() {
+    _onRoleSet(_user.copyWith(logopedaSkipped: true));
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -119,10 +123,13 @@ class _AppRouterState extends State<AppRouter> {
       );
     }
 
-    if (_user.isPatient && (_user.logopedaId == null || _user.logopedaId!.isEmpty)) {
+    if (_user.isPatient &&
+        (_user.logopedaId == null || _user.logopedaId!.isEmpty) &&
+        !_user.logopedaSkipped) {
       return PatientCodeScreen(
         user: _user,
         onLinked: _onRoleSet,
+        onSkip: _onSkipLogopeda,
       );
     }
 

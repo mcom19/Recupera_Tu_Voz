@@ -5,6 +5,7 @@ import '../services/settings_service.dart';
 import '../theme/app_theme.dart';
 import '../services/roles_service.dart';
 import '../widgets/shared_widgets.dart';
+import 'onboarding/patient_code_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final AppSettings settings;
@@ -109,7 +110,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       await RolesService(widget.user.token).desvincularme();
       if (!mounted) return;
-      final updatedUser = widget.user.copyWith(logopedaId: null, logopedaName: null);
+      // logopedaSkipped: true para que no se le fuerce la pantalla de
+      // vinculación de onboarding tras desvincularse voluntariamente desde
+      // el perfil; podrá volver a vincularse cuando quiera desde aquí.
+      final updatedUser = widget.user.copyWith(
+        logopedaId: null,
+        logopedaName: null,
+        logopedaSkipped: true,
+      );
       widget.onUserChanged?.call(updatedUser);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -127,6 +135,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     }
+  }
+
+  Future<void> _vincularOCambiarCodigo() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PatientCodeScreen(
+          user: widget.user,
+          onLinked: (updated) => widget.onUserChanged?.call(updated),
+        ),
+      ),
+    );
   }
 
   void _confirmLogout() {
@@ -326,7 +345,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // ── Sesión ────────────────────────────────────────────
           const SectionLabel('Sesión'),
           const SizedBox(height: 8),
-          // ── Logopeda vinculado ───────────────────────────────
+          // ── Logopeda vinculado / vincular ────────────────────
           if (widget.user.isPatient && widget.user.logopedaId != null) ...[
             const SizedBox(height: 8),
             Container(
@@ -336,18 +355,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: c.border),
               ),
-              child: Row(children: [
-                Icon(Icons.medical_services_outlined, color: c.teal, size: 18),
-                const SizedBox(width: 10),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Mi logopeda', style: TextStyle(color: c.textMid, fontSize: 11)),
-                  Text(widget.user.logopedaName ?? 'Vinculado', style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
-                ])),
-                TextButton(
-                  onPressed: _confirmarDesvincular,
-                  child: Text('Desvincular', style: TextStyle(color: c.warn, fontSize: 12)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Icon(Icons.medical_services_outlined, color: c.teal, size: 18),
+                    const SizedBox(width: 10),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Mi logopeda', style: TextStyle(color: c.textMid, fontSize: 11)),
+                      Text(widget.user.logopedaName ?? 'Vinculado', style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                    ])),
+                  ]),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: _vincularOCambiarCodigo,
+                        child: Text('Cambiar código', style: TextStyle(color: c.accent, fontSize: 12)),
+                      ),
+                      TextButton(
+                        onPressed: _confirmarDesvincular,
+                        child: Text('Desvincular', style: TextStyle(color: c.warn, fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ] else if (widget.user.isPatient) ...[
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: _vincularOCambiarCodigo,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: c.border),
                 ),
-              ]),
+                child: Row(children: [
+                  Icon(Icons.medical_services_outlined, color: c.accent, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Sin logopeda vinculado', style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                    Text('Introduce tu código cuando quieras', style: TextStyle(color: c.textDim, fontSize: 12)),
+                  ])),
+                  Icon(Icons.chevron_right, color: c.textDim, size: 18),
+                ]),
+              ),
             ),
             const SizedBox(height: 8),
           ],
