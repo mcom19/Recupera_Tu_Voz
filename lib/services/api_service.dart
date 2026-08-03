@@ -8,6 +8,13 @@ import '../models/app_user.dart';
 
 const String kServerUrl = 'https://mirian-eriophyllous-serriedly.ngrok-free.dev';
 
+/// Cabecera necesaria porque el backend está detrás de un túnel ngrok
+/// gratuito: sin ella, ngrok devuelve una página HTML de aviso en vez de
+/// dejar pasar la petición a la API (falla especialmente en Flutter Web,
+/// donde las peticiones llevan cabeceras de navegador).
+/// Quitar/vaciar esto cuando se sirva desde un dominio propio.
+const Map<String, String> kNgrokHeaders = {'ngrok-skip-browser-warning': 'true'};
+
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
@@ -35,7 +42,7 @@ class AuthService {
   }) async {
     final res = await http.post(
       Uri.parse('$kServerUrl/auth/register'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', ...kNgrokHeaders},
       body: jsonEncode({
         'email': email.trim(),
         'password': password,
@@ -53,7 +60,7 @@ class AuthService {
   }) async {
     final res = await http.post(
       Uri.parse('$kServerUrl/auth/login'),
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      headers: {'Content-Type': 'application/x-www-form-urlencoded', ...kNgrokHeaders},
       body: 'username=${Uri.encodeComponent(email.trim())}'
           '&password=${Uri.encodeComponent(password)}',
     ).timeout(const Duration(seconds: 15));
@@ -64,7 +71,7 @@ class AuthService {
   Future<AppUser> loginWithGoogle(String idToken) async {
     final res = await http.post(
       Uri.parse('$kServerUrl/auth/google'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', ...kNgrokHeaders},
       body: jsonEncode({'id_token': idToken}),
     ).timeout(const Duration(seconds: 15));
 
@@ -104,6 +111,21 @@ class AuthService {
 
     final p = await SharedPreferences.getInstance();
     await p.remove(_keyUser);
+    // Nota: el email recordado (_keyRememberedEmail) NO se borra al hacer
+    // logout, para que la próxima vez que se abra la app siga rellenado.
+  }
+
+  // ── EMAIL RECORDADO (para rellenar el login la próxima vez) ────
+  static const _keyRememberedEmail = 'remembered_email';
+
+  Future<void> saveRememberedEmail(String email) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString(_keyRememberedEmail, email);
+  }
+
+  Future<String?> loadRememberedEmail() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getString(_keyRememberedEmail);
   }
 
   // ── INTERNO ────────────────────────────────────────────────────
@@ -127,6 +149,7 @@ class VoiceApiService {
   Map<String, String> _headers(String token) => {
     'Authorization': 'Bearer $token',
     'Content-Type': 'application/json',
+    ...kNgrokHeaders,
   };
 
   Future<Map<String, dynamic>> checkVoiceStatusFull(String token) async {
@@ -157,7 +180,9 @@ class VoiceApiService {
     final request = http.MultipartRequest(
       'POST',
       Uri.parse('$kServerUrl/voice/upload-multiple'),
-    )..headers['Authorization'] = 'Bearer $token';
+    )
+      ..headers['Authorization'] = 'Bearer $token'
+      ..headers.addAll(kNgrokHeaders);
 
     for (final f in files) {
       request.files.add(
@@ -188,6 +213,7 @@ class VoiceApiService {
         Uri.parse('$kServerUrl/voice/upload'),
       )
         ..headers['Authorization'] = 'Bearer $token'
+        ..headers.addAll(kNgrokHeaders)
         ..files.add(
           http.MultipartFile.fromBytes('file', f.bytes, filename: f.filename),
         );
@@ -261,7 +287,7 @@ class FrasesApiService {
     // Intentar red
     try {
       final res = await http
-          .get(Uri.parse('$kServerUrl/frases/default'))
+          .get(Uri.parse('$kServerUrl/frases/default'), headers: kNgrokHeaders)
           .timeout(const Duration(seconds: 10));
 
       if (res.statusCode == 200) {
@@ -294,6 +320,7 @@ class VideosApiService {
 
   Map<String, String> get _headers => {
     'Authorization': 'Bearer $token',
+    ...kNgrokHeaders,
   };
 
   Future<Map<String, dynamic>> uploadVideo({
@@ -316,6 +343,7 @@ class VideosApiService {
 
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
+      ..headers.addAll(kNgrokHeaders)
       ..files.add(http.MultipartFile.fromBytes(
         'file', bytes, filename: filename,
       ));

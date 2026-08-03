@@ -10,10 +10,16 @@ import 'screens/profile_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/text_screen.dart';
 import 'services/api_service.dart';
+import 'services/audio_cache_service.dart';
 import 'services/settings_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/app_router.dart';
 import 'screens/trabajo_screen.dart';
+
+/// Ancho máximo del contenido de la app. En tablets/pantallas anchas evita
+/// que todo (formularios, botones, listas) se estire de borde a borde;
+/// en móvil (más estrecho que esto) no cambia nada.
+const double kMaxContentWidth = 640;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +53,15 @@ class _RecuperaTuVozAppState extends State<RecuperaTuVozApp> {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: _themeMode,
+      // Limita el ancho de TODA la app (pantallas, diálogos, bottom sheets)
+      // en pantallas anchas como tablets, centrándola tipo "tarjeta". En
+      // móvil, con ancho menor que kMaxContentWidth, esto no cambia nada.
+      builder: (context, child) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
+          child: child,
+        ),
+      ),
       home: const AppRoot(),
     );
   }
@@ -239,6 +254,8 @@ class _AppShellState extends State<AppShell> {
             token: _user.token,
             files: files,
           );
+          // La voz ha cambiado: el audio cacheado con la voz antigua ya no vale.
+          await AudioCacheService.clearAll();
           _updateUser(_user.copyWith(hasVoice: true, numReferences: saved));
           return saved;
         },
@@ -247,11 +264,13 @@ class _AppShellState extends State<AppShell> {
             token: _user.token,
             files: files,
           );
+          await AudioCacheService.clearAll();
           _updateUser(_user.copyWith(hasVoice: true, numReferences: saved));
           return saved;
         },
         onDelete: () async {
           await _voiceApi.deleteVoice(_user.token);
+          await AudioCacheService.clearAll();
           _updateUser(_user.copyWith(hasVoice: false, numReferences: 0));
         },
         onDone: () => setState(() => _showCloneVoice = false),

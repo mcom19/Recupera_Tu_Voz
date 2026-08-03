@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../models/app_user.dart';
 import '../../services/roles_service.dart';
+import '../../theme/app_theme.dart';
 import 'patient_code_screen.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
@@ -48,12 +49,25 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       builder: (_) => PatientCodeScreen(
         user: widget.user,
         onLinked: widget.onRoleSet,
+        onSkip: () {
+          // El paciente quiere entrar sin vincularse a un logopeda ahora.
+          // No hay endpoint para "fijar rol paciente sin código", así que lo
+          // marcamos localmente: role/roleSet quedan fijados aquí, y
+          // logopedaSkipped evita que AppRouter le vuelva a pedir el código.
+          Navigator.of(context).pop();
+          widget.onRoleSet(widget.user.copyWith(
+            role: 'patient',
+            roleSet: true,
+            logopedaSkipped: true,
+          ));
+        },
       ),
     ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = AdaptiveColors.of(context);
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -64,7 +78,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               const SizedBox(height: 24),
               Text(
                 '¿Cómo vas a usar\nRecupera tu voz?',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                style: TextStyle(
+                  color: c.textPrimary,
+                  fontSize: 26,
                   fontWeight: FontWeight.w600,
                   height: 1.2,
                 ),
@@ -72,10 +88,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               const SizedBox(height: 8),
               Text(
                 'Elige tu perfil para personalizar la app.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.grey.shade600),
+                style: TextStyle(color: c.textMid, fontSize: 14),
               ),
               const SizedBox(height: 48),
               _RoleCard(
@@ -102,7 +115,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               Center(
                 child: Text(
                   'Esta selección no se puede cambiar después.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12, color: c.textDim),
                 ),
               ),
             ],

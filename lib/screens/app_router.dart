@@ -54,9 +54,15 @@ class _AppRouterState extends State<AppRouter> {
       final roleInfo = await RolesService(_user.token).getRoleInfo();
       if (!mounted) return;
       setState(() {
+        final serverRole    = roleInfo['role']     as String?;
+        final serverRoleSet = roleInfo['role_set'] as bool? ?? false;
         _user = _user.copyWith(
-          role:         roleInfo['role']         as String?,
-          roleSet:      roleInfo['role_set']     as bool?,
+          // El backend no tiene forma de guardar "paciente sin vincular"
+          // (no hay endpoint para fijar el rol sin código), así que si ya
+          // decidimos eso localmente no dejamos que un role_set=false del
+          // servidor nos mande otra vez a elegir perfil.
+          role:         serverRole ?? _user.role,
+          roleSet:      serverRoleSet || _user.roleSet,
           logopedaId:   roleInfo['logopeda_id']  as String?,
           logopedaName: roleInfo['logopeda_name'] as String?,
         );

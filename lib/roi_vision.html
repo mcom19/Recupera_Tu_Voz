@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROI — Region of Interest en Visión por Computador</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #242740;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --accent4: #f7971e;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border: #2d3148;
+    --code-bg: #0d1117;
+    --tag-bg: #2d3148;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    overflow-x: auto;
+  }
+  nav .logo {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--accent);
+    white-space: nowrap;
+    margin-right: 1rem;
+    letter-spacing: 0.5px;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    transition: color 0.2s;
+    letter-spacing: 0.3px;
+  }
+  nav a:hover { color: var(--accent); }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #1a1d2e 0%, #12142a 50%, #1a1d2e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 5rem 2rem 4rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(108,99,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto 2rem;
+  }
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.3rem 0.9rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0.2rem;
+  }
+  .tag.purple { border-color: var(--accent); color: var(--accent); }
+  .tag.green  { border-color: var(--accent3); color: var(--accent3); }
+  .tag.orange { border-color: var(--accent4); color: var(--accent4); }
+  .tag.pink   { border-color: var(--accent2); color: var(--accent2); }
+
+  /* LAYOUT */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  section {
+    padding: 4rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  section:last-child { border-bottom: none; }
+
+  h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.5px;
+  }
+  h2 .num {
+    color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.3rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 2rem 0 0.75rem;
+    color: var(--text);
+  }
+  p { color: var(--text-muted); margin-bottom: 1rem; }
+  strong { color: var(--text); }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; margin: 2rem 0; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .card .icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+  .card h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+  .card p { font-size: 0.88rem; margin: 0; }
+
+  .card.accent-purple { border-top: 3px solid var(--accent); }
+  .card.accent-green  { border-top: 3px solid var(--accent3); }
+  .card.accent-orange { border-top: 3px solid var(--accent4); }
+  .card.accent-pink   { border-top: 3px solid var(--accent2); }
+
+  /* CODE */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.4rem 1.6rem;
+    overflow-x: auto;
+    margin: 1.2rem 0;
+    position: relative;
+  }
+  pre .label {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.8rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: var(--surface);
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.8;
+  }
+  .kw  { color: #c792ea; }
+  .fn  { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .num { color: #f78c6c; }
+  .cm  { color: #546e7a; font-style: italic; }
+  .tp  { color: #ffcb6b; }
+  .op  { color: #89ddff; }
+
+  /* DIAGRAM */
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 2rem 0;
+    overflow-x: auto;
+  }
+
+  /* PIPELINE */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 1.5rem 0;
+  }
+  .pipeline-step {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 1.1rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-align: center;
+    min-width: 120px;
+  }
+  .pipeline-step.highlight { border-color: var(--accent); color: var(--accent); background: rgba(108,99,255,0.1); }
+  .pipeline-step.green { border-color: var(--accent3); color: var(--accent3); background: rgba(67,233,123,0.08); }
+  .pipeline-arrow {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    margin: 0 0.3rem;
+  }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  thead tr { background: var(--surface2); }
+  th {
+    padding: 0.8rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    vertical-align: top;
+  }
+  td strong { color: var(--text); }
+  tr:hover td { background: var(--surface); }
+
+  /* FORMULA */
+  .formula {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.5rem;
+    margin: 1.2rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  .formula small { display: block; color: var(--text-muted); font-size: 0.78rem; margin-top: 0.4rem; font-family: sans-serif; }
+
+  /* CALLOUT */
+  .callout {
+    border-radius: 10px;
+    padding: 1.2rem 1.5rem;
+    margin: 1.5rem 0;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  .callout.info { background: rgba(108,99,255,0.08); border: 1px solid rgba(108,99,255,0.3); }
+  .callout.warn { background: rgba(247,151,30,0.08); border: 1px solid rgba(247,151,30,0.3); }
+  .callout.tip  { background: rgba(67,233,123,0.08); border: 1px solid rgba(67,233,123,0.3); }
+  .callout .icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 0.1rem; }
+  .callout p { margin: 0; font-size: 0.88rem; }
+
+  /* METRIC BADGES */
+  .metrics { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1.5rem 0; }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    flex: 1;
+    min-width: 130px;
+  }
+  .metric .val { font-size: 1.8rem; font-weight: 800; color: var(--accent3); }
+  .metric .lbl { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+  /* CANVAS DEMO */
+  .canvas-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    text-align: center;
+  }
+  canvas { border-radius: 6px; max-width: 100%; cursor: crosshair; display: block; margin: 0 auto; }
+  .canvas-controls { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
+  .btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 7px;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn.primary:hover { background: #5a52e0; }
+  .canvas-info { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem; }
+
+  /* COMPARISON BAR */
+  .bar-row { display: flex; align-items: center; gap: 1rem; margin: 0.6rem 0; }
+  .bar-label { width: 140px; font-size: 0.82rem; color: var(--text-muted); text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--surface2); border-radius: 100px; height: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 100px; transition: width 1s ease; }
+  .bar-val { width: 50px; font-size: 0.78rem; color: var(--text-muted); }
+
+  /* FOOTER */
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+
+  @media (max-width: 600px) {
+    nav { padding: 0.6rem 1rem; }
+    .container { padding: 0 1rem; }
+    section { padding: 2.5rem 0; }
+    h2 { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="logo">ROI · CV</span>
+  <a href="#concepto">Concepto</a>
+  <a href="#tipos">Tipos</a>
+  <a href="#geometria">Geometría</a>
+  <a href="#extraccion">Extracción</a>
+  <a href="#latencia">Latencia</a>
+  <a href="#tracking">Tracking</a>
+  <a href="#mediapipe">MediaPipe</a>
+  <a href="#retinaface">RetinaFace</a>
+  <a href="#demo">Demo</a>
+  <a href="#comparativa">Comparativa</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Region of <span>Interest</span><br>en Visión por Computador</h1>
+  <p>Todo lo que necesitás saber sobre ROI: desde el concepto matemático hasta la optimización de latencia en pipelines reales.</p>
+  <div>
+    <span class="tag purple">OpenCV</span>
+    <span class="tag purple">MediaPipe</span>
+    <span class="tag green">Latencia</span>
+    <span class="tag green">Tracking</span>
+    <span class="tag orange">NumPy</span>
+    <span class="tag pink">RetinaFace</span>
+  </div>
+</div>
+
+<!-- 1. CONCEPTO -->
+<section id="concepto">
+  <div class="container">
+    <h2><span class="num">01</span>¿Qué es una ROI?</h2>
+    <p>Una <strong>Region of Interest</strong> es un subconjunto delimitado del espacio de una imagen sobre el que se concentra el procesamiento computacional. En lugar de aplicar algoritmos costosos sobre cada píxel del frame completo, se define una ventana — rectangular, circular, poligonal o basada en máscara — dentro de la cual se realizan las operaciones.</p>
+    <p>El concepto tiene raíces en la visión humana: el sistema visual periférico humano actúa como prefilter de baja resolución que dirige la fóvea (zona de máxima resolución) a la región relevante. En sistemas de visión artificial, la ROI reproduce ese mecanismo de atención selectiva.</p>
+
+    <div class="grid-3">
+      <div class="card accent-purple">
+        <span class="icon">🎯</span>
+        <h4>Eficiencia computacional</h4>
+        <p>Reducir el área procesada de 1080×1920 a 200×200 baja el trabajo por factor ~100×. El coste de procesamiento escala con los píxeles analizados.</p>
+      </div>
+      <div class="card accent-green">
+        <span class="icon">⚡</span>
+        <h4>Reducción de latencia</h4>
+        <p>Menos píxeles = menos ciclos de CPU/GPU = menor tiempo de inferencia. Crítico en aplicaciones real-time (≤33ms por frame a 30fps).</p>
+      </div>
+      <div class="card accent-orange">
+        <span class="icon">📐</span>
+        <h4>Mayor precisión local</h4>
+        <p>Un modelo que procesa un crop ampliado de la cara detecta mejor microexpresiones que uno que procesa el frame completo con la cara pequeña.</p>
+      </div>
+      <div class="card accent-pink">
+        <span class="icon">🧠</span>
+        <h4>Contexto semántico</h4>
+        <p>Permite alimentar modelos especializados con el dato que corresponde: el modelo de iris recibe solo el crop del ojo, no toda la cara.</p>
+      </div>
+      <div class="card accent-purple">
+        <span class="icon">🔁</span>
+        <h4>Integración con tracking</h4>
+        <p>La ROI se propaga entre frames siguiendo el objeto, evitando redetecciones completas. El tracker mantiene la ventana alineada con el sujeto.</p>
+      </div>
+      <div class="card accent-green">
+        <span class="icon">💾</span>
+        <h4>Menos transferencia de datos</h4>
+        <p>En pipelines con aceleradores (GPU, NPU, EdgeTPU), transferir solo el ROI reduce el cuello de botella en el bus de datos.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. TIPOS -->
+<section id="tipos">
+  <div class="container">
+    <h2><span class="num">02</span>Tipos de ROI</h2>
+
+    <div class="grid-2">
+      <div class="card accent-purple">
+        <h4>🔲 ROI Rectangular (Bounding Box)</h4>
+        <p>La más común. Definida por coordenadas <code>(x, y, w, h)</code> o <code>(x1, y1, x2, y2)</code>. Fácil de extraer con slicing NumPy. OpenCV y la mayoría de detectores la usan como salida nativa.</p>
+        <pre><code><span class="cm"># Extracción directa</span>
+roi <span class="op">=</span> frame[y1:y2, x1:x2]</code></pre>
+      </div>
+
+      <div class="card accent-green">
+        <h4>⬡ ROI Poligonal</h4>
+        <p>Definida por un polígono convexo o cóncavo. Se usa cuando el área de interés no es rectangular: zonas de tráfico, siluetas corporales, áreas de seguridad. Requiere máscara.</p>
+        <pre><code>pts <span class="op">=</span> np.<span class="fn">array</span>([[x1,y1],[x2,y2],[x3,y3]])
+mask <span class="op">=</span> np.<span class="fn">zeros_like</span>(frame)
+cv2.<span class="fn">fillPoly</span>(mask, [pts], (<span class="num">255</span>,<span class="num">255</span>,<span class="num">255</span>))
+roi <span class="op">=</span> cv2.<span class="fn">bitwise_and</span>(frame, mask)</code></pre>
+      </div>
+
+      <div class="card accent-orange">
+        <h4>⭕ ROI Circular / Elíptica</h4>
+        <p>Para iris, pupilas, objetos circulares. Se define por centro y radio o semiejes. Generalmente se convierte a máscara binaria antes de procesar.</p>
+        <pre><code>mask <span class="op">=</span> np.<span class="fn">zeros</span>(frame.shape[:2], <span class="tp">dtype</span><span class="op">=</span><span class="str">'uint8'</span>)
+cv2.<span class="fn">circle</span>(mask, (cx, cy), r, <span class="num">255</span>, <span class="op">-</span><span class="num">1</span>)
+roi <span class="op">=</span> cv2.<span class="fn">bitwise_and</span>(frame, frame, <span class="tp">mask</span><span class="op">=</span>mask)</code></pre>
+      </div>
+
+      <div class="card accent-pink">
+        <h4>🎭 ROI por Máscara de Segmentación</h4>
+        <p>La ROI más precisa: cada píxel se clasifica como dentro/fuera. Producida por modelos de segmentación (SAM, DeepLab). Coste computacional alto, pero máxima fidelidad espacial.</p>
+        <pre><code><span class="cm"># mask es salida binaria del modelo</span>
+roi <span class="op">=</span> np.<span class="fn">zeros_like</span>(frame)
+roi[mask <span class="op">></span> <span class="num">0.5</span>] <span class="op">=</span> frame[mask <span class="op">></span> <span class="num">0.5</span>]</code></pre>
+      </div>
+    </div>
+
+    <h3>ROI Adaptativa vs Fija</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo</th><th>Descripción</th><th>Ventaja</th><th>Desventaja</th><th>Caso de uso</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Fija</strong></td>
+            <td>Coordenadas constantes en todos los frames</td>
+            <td>Cero overhead, determinista</td>
+            <td>Falla si el sujeto se mueve fuera</td>
+            <td>Cámara fija, sujeto estático</td>
+          </tr>
+          <tr>
+            <td><strong>Dinámica</strong></td>
+            <td>Se recalcula cada N frames según resultado anterior</td>
+            <td>Sigue al sujeto</td>
+            <td>Overhead de recálculo</td>
+            <td>Face tracking, vehículos</td>
+          </tr>
+          <tr>
+            <td><strong>Predictiva</strong></td>
+            <td>Kalman/velocity prediction antes de detectar</td>
+            <td>Mínima redetección</td>
+            <td>Complejidad de implementación</td>
+            <td>Alta velocidad, drones</td>
+          </tr>
+          <tr>
+            <td><strong>Multi-ROI</strong></td>
+            <td>Varias regiones en paralelo</td>
+            <td>Múltiples sujetos</td>
+            <td>Escala linealmente con N sujetos</td>
+            <td>Crowd analysis</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 3. GEOMETRIA -->
+<section id="geometria">
+  <div class="container">
+    <h2><span class="num">03</span>Geometría y Transformaciones</h2>
+
+    <h3>Sistemas de coordenadas</h3>
+    <p>En procesamiento de imágenes coexisten tres espacios de coordenadas que hay que mantener correctamente sincronizados:</p>
+
+    <div class="grid-3">
+      <div class="card">
+        <h4>🖼️ Espacio Imagen (absoluto)</h4>
+        <p>Coordenadas en píxeles desde la esquina superior izquierda. Rango: <code>[0, W) × [0, H)</code>. El eje Y crece hacia abajo. Origen en (0,0).</p>
+        <div class="formula">x ∈ [0, W-1]<br>y ∈ [0, H-1]</div>
+      </div>
+      <div class="card">
+        <h4>📦 Espacio ROI (relativo)</h4>
+        <p>Coordenadas locales dentro del crop extraído. Origen en la esquina superior izquierda del bounding box. Rango: <code>[0, roi_w) × [0, roi_h)</code>.</p>
+        <div class="formula">x_roi = x_img - x1<br>y_roi = y_img - y1</div>
+      </div>
+      <div class="card">
+        <h4>📊 Espacio Normalizado</h4>
+        <p>MediaPipe y redes modernas emiten coordenadas en [0,1]. Fáciles de escalar a cualquier resolución, pero hay que reescalar al espacio imagen para visualizar.</p>
+        <div class="formula">x_px = x_norm × W<br>y_px = y_norm × H</div>
+      </div>
+    </div>
+
+    <h3>Transformación ROI → Frame original</h3>
+    <p>Cuando se procesan landmarks dentro de un ROI, las coordenadas deben reescalarse al espacio del frame completo. El proceso es una transformación afín:</p>
+    <pre><code><span class="kw">def</span> <span class="fn">roi_to_frame</span>(lm_x, lm_y, roi_bbox, roi_size):
+    <span class="str">"""
+    lm_x, lm_y   : coords normalizadas [0,1] dentro del ROI
+    roi_bbox      : (x1, y1, x2, y2) del ROI en el frame
+    roi_size      : (roi_w, roi_h) del crop redimensionado
+    """</span>
+    x1, y1, x2, y2 <span class="op">=</span> roi_bbox
+    roi_w <span class="op">=</span> x2 <span class="op">-</span> x1
+    roi_h <span class="op">=</span> y2 <span class="op">-</span> y1
+
+    <span class="cm"># Escalar de espacio normalizado a píxeles del ROI</span>
+    x_roi <span class="op">=</span> lm_x <span class="op">*</span> roi_w
+    y_roi <span class="op">=</span> lm_y <span class="op">*</span> roi_h
+
+    <span class="cm"># Trasladar al espacio del frame completo</span>
+    x_frame <span class="op">=</span> x_roi <span class="op">+</span> x1
+    y_frame <span class="op">=</span> y_roi <span class="op">+</span> y1
+
+    <span class="kw">return</span> <span class="tp">int</span>(x_frame), <span class="tp">int</span>(y_frame)
+
+<span class="cm"># Vectorizado con NumPy para múltiples puntos</span>
+<span class="kw">def</span> <span class="fn">batch_roi_to_frame</span>(landmarks_norm, roi_bbox):
+    x1, y1, x2, y2 <span class="op">=</span> roi_bbox
+    scale <span class="op">=</span> np.<span class="fn">array</span>([x2<span class="op">-</span>x1, y2<span class="op">-</span>y1])
+    offset <span class="op">=</span> np.<span class="fn">array</span>([x1, y1])
+    <span class="kw">return</span> (landmarks_norm <span class="op">*</span> scale <span class="op">+</span> offset).<span class="fn">astype</span>(<span class="tp">int</span>)</code></pre>
+
+    <h3>Margen de expansión (padding)</h3>
+    <p>Un ROI demasiado ajustado pierde contexto (orejas, contorno del cráneo). Un ROI demasiado grande desperdicia cómputo. La práctica estándar es expandir el bounding box con un factor de margen:</p>
+
+    <pre><code><span class="kw">def</span> <span class="fn">expand_bbox</span>(x1, y1, x2, y2, margin<span class="op">=</span><span class="num">0.2</span>, img_w<span class="op">=</span><span class="num">1920</span>, img_h<span class="op">=</span><span class="num">1080</span>):
+    <span class="str">"""
+    margin=0.2 añade 20% del tamaño del bbox en cada lado.
+    Se clampea para no salir del frame.
+    """</span>
+    w <span class="op">=</span> x2 <span class="op">-</span> x1
+    h <span class="op">=</span> y2 <span class="op">-</span> y1
+    dx <span class="op">=</span> <span class="tp">int</span>(w <span class="op">*</span> margin)
+    dy <span class="op">=</span> <span class="tp">int</span>(h <span class="op">*</span> margin)
+
+    x1_new <span class="op">=</span> <span class="fn">max</span>(<span class="num">0</span>,     x1 <span class="op">-</span> dx)
+    y1_new <span class="op">=</span> <span class="fn">max</span>(<span class="num">0</span>,     y1 <span class="op">-</span> dy)
+    x2_new <span class="op">=</span> <span class="fn">min</span>(img_w, x2 <span class="op">+</span> dx)
+    y2_new <span class="op">=</span> <span class="fn">min</span>(img_h, y2 <span class="op">+</span> dy)
+
+    <span class="kw">return</span> x1_new, y1_new, x2_new, y2_new
+
+<span class="cm"># Márgenes recomendados por tarea:</span>
+<span class="cm"># Cara completa:      margin = 0.15 – 0.25</span>
+<span class="cm"># Solo ojo (iris):    margin = 0.30 – 0.50</span>
+<span class="cm"># Vehículo en calle: margin = 0.05 – 0.10</span></code></pre>
+
+    <div class="callout info">
+      <span class="icon">💡</span>
+      <p><strong>Regla práctica:</strong> Para detección facial, un margen del 20–25% en cada lado garantiza que ningún landmark quede en el borde del crop, lo que degrada la precisión del modelo dramáticamente. Para el submodelo de iris de MediaPipe, el margen debe ser ≥40% del tamaño del ojo.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. EXTRACCION -->
+<section id="extraccion">
+  <div class="container">
+    <h2><span class="num">04</span>Extracción y Preprocesamiento</h2>
+
+    <h3>Slicing NumPy — la operación fundamental</h3>
+    <p>En OpenCV/NumPy, una imagen es un array 3D <code>(H, W, C)</code>. Extraer un ROI es simplemente un slice. <strong>Importante:</strong> el slice devuelve una vista (no copia), eficiente en memoria pero peligroso si se modifica.</p>
+
+    <pre><code><span class="kw">import</span> cv2
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="cm"># Vista — no copia datos (rápido)</span>
+roi_view <span class="op">=</span> frame[y1:y2, x1:x2]          <span class="cm"># modificar esto afecta frame</span>
+
+<span class="cm"># Copia — independiente del frame original</span>
+roi_copy <span class="op">=</span> frame[y1:y2, x1:x2].<span class="fn">copy</span>()   <span class="cm"># safe para procesamiento asíncrono</span>
+
+<span class="cm"># Redimensionar al tamaño que espera el modelo</span>
+MODEL_INPUT <span class="op">=</span> (<span class="num">192</span>, <span class="num">192</span>)  <span class="cm"># MediaPipe Face Landmark</span>
+roi_resized <span class="op">=</span> cv2.<span class="fn">resize</span>(roi_copy, MODEL_INPUT,
+                          <span class="tp">interpolation</span><span class="op">=</span>cv2.INTER_LINEAR)
+
+<span class="cm"># Normalizar a [0,1] float32</span>
+roi_float <span class="op">=</span> roi_resized.<span class="fn">astype</span>(np.float32) <span class="op">/</span> <span class="num">255.0</span>
+
+<span class="cm"># Añadir dimensión batch: (1, H, W, C)</span>
+roi_batch <span class="op">=</span> np.<span class="fn">expand_dims</span>(roi_float, axis<span class="op">=</span><span class="num">0</span>)</code></pre>
+
+    <h3>Interpolación al redimensionar</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Interpolación</th><th>Calidad</th><th>Velocidad</th><th>Usar cuando</th></tr></thead>
+        <tbody>
+          <tr><td><strong>INTER_NEAREST</strong></td><td>Baja</td><td>Muy rápida</td><td>Máscaras binarias, downscale extremo</td></tr>
+          <tr><td><strong>INTER_LINEAR</strong></td><td>Media</td><td>Rápida</td><td>Inferencia en tiempo real (default)</td></tr>
+          <tr><td><strong>INTER_AREA</strong></td><td>Media-alta</td><td>Media</td><td>Reducción de tamaño (menos moiré)</td></tr>
+          <tr><td><strong>INTER_CUBIC</strong></td><td>Alta</td><td>Lenta</td><td>Ampliación para análisis detallado</td></tr>
+          <tr><td><strong>INTER_LANCZOS4</strong></td><td>Muy alta</td><td>Muy lenta</td><td>Postprocesamiento no real-time</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Pipeline de extracción completo</h3>
+    <div class="diagram">
+      <div class="pipeline">
+        <div class="pipeline-step">Frame completo<br><small>1920×1080</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step highlight">Detector<br><small>BlazeFace / FPN</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step">BBox + margin<br><small>expand(0.2)</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step green">ROI crop<br><small>slice NumPy</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step">Resize<br><small>192×192</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step highlight">Modelo<br><small>landmark/iris</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step green">Reescalar<br><small>→ frame coords</small></div>
+      </div>
+    </div>
+
+    <h3>Manejo de bordes — casos límite</h3>
+    <pre><code><span class="kw">def</span> <span class="fn">safe_crop</span>(frame, x1, y1, x2, y2):
+    <span class="str">"""
+    Maneja ROIs que salen parcialmente del frame.
+    Rellena las áreas externas con negro (o con mean del ROI).
+    """</span>
+    h, w <span class="op">=</span> frame.shape[:2]
+
+    <span class="cm"># Coordenadas clampeadas al frame</span>
+    cx1, cy1 <span class="op">=</span> <span class="fn">max</span>(<span class="num">0</span>,x1), <span class="fn">max</span>(<span class="num">0</span>,y1)
+    cx2, cy2 <span class="op">=</span> <span class="fn">min</span>(w,x2), <span class="fn">min</span>(h,y2)
+
+    <span class="cm"># Crear canvas del tamaño original del ROI solicitado</span>
+    roi_w, roi_h <span class="op">=</span> x2<span class="op">-</span>x1, y2<span class="op">-</span>y1
+    canvas <span class="op">=</span> np.<span class="fn">zeros</span>((roi_h, roi_w, frame.shape[2]), dtype<span class="op">=</span>frame.dtype)
+
+    <span class="cm"># Offset donde pegar el crop válido dentro del canvas</span>
+    paste_x1 <span class="op">=</span> cx1 <span class="op">-</span> x1
+    paste_y1 <span class="op">=</span> cy1 <span class="op">-</span> y1
+    crop <span class="op">=</span> frame[cy1:cy2, cx1:cx2]
+    canvas[paste_y1:paste_y1<span class="op">+</span>crop.shape[0], paste_x1:paste_x1<span class="op">+</span>crop.shape[1]] <span class="op">=</span> crop
+
+    <span class="kw">return</span> canvas</code></pre>
+  </div>
+</section>
+
+<!-- 5. LATENCIA -->
+<section id="latencia">
+  <div class="container">
+    <h2><span class="num">05</span>Optimización de Latencia con ROI</h2>
+
+    <p>El impacto de la ROI en latencia depende del modelo y la arquitectura. Estos son los números reales con hardware de consumo (CPU Intel i7 / GPU GTX 1660):</p>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="val">~85%</div>
+        <div class="lbl">reducción de píxeles procesados con ROI 30% del frame</div>
+      </div>
+      <div class="metric">
+        <div class="val">3–8×</div>
+        <div class="lbl">speedup típico en detector cuando se pasa ROI vs frame completo</div>
+      </div>
+      <div class="metric">
+        <div class="val">&lt;1ms</div>
+        <div class="lbl">coste del slice NumPy + resize (overhead de extraer el ROI)</div>
+      </div>
+      <div class="metric">
+        <div class="val">K=15</div>
+        <div class="lbl">frames óptimos entre redetecciones completas en tracking 30fps</div>
+      </div>
+    </div>
+
+    <h3>Comparativa de tiempos por estrategia</h3>
+    <div class="diagram">
+      <div class="bar-row">
+        <span class="bar-label">Frame completo</span>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--accent2)"></div></div>
+        <span class="bar-val">~35ms</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">ROI 50% frame</span>
+        <div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--accent4)"></div></div>
+        <span class="bar-val">~20ms</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">ROI 30% frame</span>
+        <div class="bar-track"><div class="bar-fill" style="width:35%;background:var(--accent)"></div></div>
+        <span class="bar-val">~12ms</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">ROI 15% frame</span>
+        <div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--accent3)"></div></div>
+        <span class="bar-val">~7ms</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Tracking (KCF)</span>
+        <div class="bar-track"><div class="bar-fill" style="width:5%;background:var(--accent3)"></div></div>
+        <span class="bar-val">~0.8ms</span>
+      </div>
+    </div>
+    <p style="font-size:0.8rem;margin-top:0.5rem">* RetinaFace MobileNet0.25, CPU, resolución 640×480. Los valores varían con hardware y modelo.</p>
+
+    <h3>Estrategia híbrida detect → track → redetect</h3>
+    <pre><code><span class="kw">class</span> <span class="tp">ROITracker</span>:
+    <span class="str">"""
+    Detecta en frame 0, luego trackea N frames,
+    luego redetecta para corregir drift acumulado.
+    """</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, detector, redetect_every<span class="op">=</span><span class="num">15</span>, margin<span class="op">=</span><span class="num">0.2</span>):
+        self.detector <span class="op">=</span> detector
+        self.redetect_every <span class="op">=</span> redetect_every
+        self.margin <span class="op">=</span> margin
+        self.frame_count <span class="op">=</span> <span class="num">0</span>
+        self.roi_bbox <span class="op">=</span> <span class="tp">None</span>
+        self.tracker <span class="op">=</span> <span class="tp">None</span>
+        self.confidence <span class="op">=</span> <span class="num">1.0</span>
+
+    <span class="kw">def</span> <span class="fn">update</span>(self, frame):
+        h, w <span class="op">=</span> frame.shape[:2]
+        needs_detect <span class="op">=</span> (
+            self.roi_bbox <span class="kw">is</span> <span class="tp">None</span>                             <span class="cm"># primer frame</span>
+            <span class="kw">or</span> self.frame_count <span class="op">%</span> self.redetect_every <span class="op">==</span> <span class="num">0</span>   <span class="cm"># periódica</span>
+            <span class="kw">or</span> self.confidence <span class="op">&lt;</span> <span class="num">0.4</span>                          <span class="cm"># tracker perdió</span>
+        )
+
+        <span class="kw">if</span> needs_detect:
+            <span class="cm"># Detección sobre frame completo</span>
+            faces <span class="op">=</span> self.detector.<span class="fn">detect</span>(frame)
+            <span class="kw">if not</span> faces:
+                <span class="kw">return</span> <span class="tp">None</span>
+            self.roi_bbox <span class="op">=</span> <span class="fn">expand_bbox</span>(<span class="op">*</span>faces[<span class="num">0</span>][<span class="str">'bbox'</span>],
+                                         margin<span class="op">=</span>self.margin, img_w<span class="op">=</span>w, img_h<span class="op">=</span>h)
+            <span class="cm"># Reiniciar tracker en la nueva posición</span>
+            self.tracker <span class="op">=</span> cv2.TrackerKCF_create()
+            x1,y1,x2,y2 <span class="op">=</span> self.roi_bbox
+            self.tracker.<span class="fn">init</span>(frame, (x1, y1, x2<span class="op">-</span>x1, y2<span class="op">-</span>y1))
+        <span class="kw">else</span>:
+            <span class="cm"># Solo tracking — barato</span>
+            ok, (tx, ty, tw, th) <span class="op">=</span> self.tracker.<span class="fn">update</span>(frame)
+            self.confidence <span class="op">=</span> <span class="num">1.0</span> <span class="kw">if</span> ok <span class="kw">else</span> <span class="num">0.0</span>
+            <span class="kw">if</span> ok:
+                self.roi_bbox <span class="op">=</span> <span class="fn">expand_bbox</span>(
+                    tx, ty, tx<span class="op">+</span>tw, ty<span class="op">+</span>th,
+                    margin<span class="op">=</span>self.margin, img_w<span class="op">=</span>w, img_h<span class="op">=</span>h
+                )
+
+        self.frame_count <span class="op">+=</span> <span class="num">1</span>
+        <span class="kw">return</span> self.roi_bbox</code></pre>
+
+    <div class="callout warn">
+      <span class="icon">⚠️</span>
+      <p><strong>Drift acumulativo:</strong> Los trackers como KCF/CSRT acumulan error frame a frame. Sin redetección periódica, el ROI se desplaza y el modelo recibe un crop incorrecto. El intervalo óptimo de redetección depende de la velocidad de movimiento esperada: para cabeza quieta, K=30; para movimiento rápido, K=5–10.</p>
+    </div>
+
+    <h3>ROI multi-escala para robustez</h3>
+    <pre><code><span class="kw">def</span> <span class="fn">multi_scale_roi</span>(frame, bbox, scales<span class="op">=</span>[<span class="num">0.8</span>, <span class="num">1.0</span>, <span class="num">1.2</span>]):
+    <span class="str">"""
+    Procesa el mismo ROI a múltiples escalas y combina.
+    Útil cuando el sujeto puede estar parcialmente fuera del ROI esperado.
+    """</span>
+    results <span class="op">=</span> []
+    x1,y1,x2,y2 <span class="op">=</span> bbox
+    cx, cy <span class="op">=</span> (x1<span class="op">+</span>x2)<span class="op">//</span><span class="num">2</span>, (y1<span class="op">+</span>y2)<span class="op">//</span><span class="num">2</span>
+    w, h <span class="op">=</span> x2<span class="op">-</span>x1, y2<span class="op">-</span>y1
+
+    <span class="kw">for</span> s <span class="kw">in</span> scales:
+        sw, sh <span class="op">=</span> <span class="tp">int</span>(w<span class="op">*</span>s<span class="op">/</span><span class="num">2</span>), <span class="tp">int</span>(h<span class="op">*</span>s<span class="op">/</span><span class="num">2</span>)
+        scaled_bbox <span class="op">=</span> (cx<span class="op">-</span>sw, cy<span class="op">-</span>sh, cx<span class="op">+</span>sw, cy<span class="op">+</span>sh)
+        roi <span class="op">=</span> <span class="fn">safe_crop</span>(frame, <span class="op">*</span>scaled_bbox)
+        results.<span class="fn">append</span>((s, roi, scaled_bbox))
+
+    <span class="kw">return</span> results  <span class="cm"># procesar cada uno y tomar la predicción de mayor confianza</span></code></pre>
+  </div>
+</section>
+
+<!-- 6. TRACKING -->
+<section id="tracking">
+  <div class="container">
+    <h2><span class="num">06</span>Algoritmos de Tracking para ROI Dinámico</h2>
+
+    <div class="grid-2">
+      <div class="card accent-purple">
+        <h4>🔵 KCF — Kernelized Correlation Filter</h4>
+        <p>Basado en filtros de correlación en dominio frecuencial. Eficiente en CPU, excelente para objetos que se mueven suavemente. No maneja bien oclusión ni cambios bruscos de escala.</p>
+        <div class="formula">Velocidad: ~0.5ms/frame<br>Precisión: media<br><small>cv2.TrackerKCF_create()</small></div>
+      </div>
+
+      <div class="card accent-green">
+        <h4>🟢 CSRT — Channel and Spatial Reliability</h4>
+        <p>Extensión de KCF con mapa de confiabilidad espacial. Más robusto ante cambios de escala y deformación. ~3× más lento que KCF pero mejor precisión.</p>
+        <div class="formula">Velocidad: ~2ms/frame<br>Precisión: alta<br><small>cv2.TrackerCSRT_create()</small></div>
+      </div>
+
+      <div class="card accent-orange">
+        <h4>🟠 Kalman Filter</h4>
+        <p>Modelo dinámico lineal que predice la posición futura basado en velocidad y aceleración. Ideal para combinar con detectores: el Kalman predice, el detector corrige.</p>
+        <div class="formula">Velocidad: ~0.1ms/frame<br>Precisión: depende del modelo<br><small>cv2.KalmanFilter()</small></div>
+      </div>
+
+      <div class="card accent-pink">
+        <h4>🔴 ByteTrack / DeepSORT</h4>
+        <p>Trackers multi-objeto basados en Hungarian algorithm + apariencia (DeepSORT) o solo IoU (ByteTrack). Para múltiples sujetos simultáneos. Más complejo pero maneja reid y oclusión.</p>
+        <div class="formula">Velocidad: ~5–15ms/frame<br>Precisión: muy alta<br><small>pip install bytetracker</small></div>
+      </div>
+    </div>
+
+    <h3>Kalman Filter para predicción de ROI</h3>
+    <pre><code><span class="kw">import</span> cv2
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">class</span> <span class="tp">KalmanROI</span>:
+    <span class="str">"""
+    Estado: [x, y, vx, vy]  (posición centro + velocidad)
+    Medición: [x, y]        (centro del bbox detectado)
+    """</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self.kf <span class="op">=</span> cv2.<span class="fn">KalmanFilter</span>(<span class="num">4</span>, <span class="num">2</span>)  <span class="cm"># 4 estados, 2 medidas</span>
+
+        <span class="cm"># Matriz de transición: posición += velocidad</span>
+        self.kf.transitionMatrix <span class="op">=</span> np.<span class="fn">array</span>([
+            [<span class="num">1</span>,<span class="num">0</span>,<span class="num">1</span>,<span class="num">0</span>],
+            [<span class="num">0</span>,<span class="num">1</span>,<span class="num">0</span>,<span class="num">1</span>],
+            [<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>,<span class="num">0</span>],
+            [<span class="num">0</span>,<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>]], dtype<span class="op">=</span>np.float32)
+
+        <span class="cm"># Matriz de medición: observamos solo x, y</span>
+        self.kf.measurementMatrix <span class="op">=</span> np.<span class="fn">array</span>([
+            [<span class="num">1</span>,<span class="num">0</span>,<span class="num">0</span>,<span class="num">0</span>],
+            [<span class="num">0</span>,<span class="num">1</span>,<span class="num">0</span>,<span class="num">0</span>]], dtype<span class="op">=</span>np.float32)
+
+        self.kf.processNoiseCov     <span class="op">=</span> np.<span class="fn">eye</span>(<span class="num">4</span>, dtype<span class="op">=</span>np.float32) <span class="op">*</span> <span class="num">0.03</span>
+        self.kf.measurementNoiseCov <span class="op">=</span> np.<span class="fn">eye</span>(<span class="num">2</span>, dtype<span class="op">=</span>np.float32) <span class="op">*</span> <span class="num">1.0</span>
+
+    <span class="kw">def</span> <span class="fn">predict</span>(self):
+        <span class="kw">return</span> self.kf.<span class="fn">predict</span>()[:2]  <span class="cm"># posición predicha (x, y)</span>
+
+    <span class="kw">def</span> <span class="fn">correct</span>(self, x, y):
+        measurement <span class="op">=</span> np.<span class="fn">array</span>([[np.<span class="fn">float32</span>(x)],
+                                   [np.<span class="fn">float32</span>(y)]])
+        <span class="kw">return</span> self.kf.<span class="fn">correct</span>(measurement)
+
+<span class="cm"># Uso en pipeline:</span>
+kf <span class="op">=</span> <span class="tp">KalmanROI</span>()
+<span class="kw">for</span> frame <span class="kw">in</span> video_stream:
+    pred_cx, pred_cy <span class="op">=</span> kf.<span class="fn">predict</span>()     <span class="cm"># usar para el ROI del frame actual</span>
+    <span class="kw">if</span> frame_count <span class="op">%</span> K <span class="op">==</span> <span class="num">0</span>:            <span class="cm"># cada K frames: detectar y corregir</span>
+        detected_cx, detected_cy <span class="op">=</span> <span class="fn">run_detector</span>(frame)
+        kf.<span class="fn">correct</span>(detected_cx, detected_cy)</code></pre>
+  </div>
+</section>
+
+<!-- 7. MEDIAPIPE -->
+<section id="mediapipe">
+  <div class="container">
+    <h2><span class="num">07</span>ROI en MediaPipe</h2>
+
+    <p>MediaPipe implementa ROI de forma interna y transparente. Entenderlo permite intervenir en el pipeline para optimizarlo.</p>
+
+    <h3>Arquitectura interna de ROI en MediaPipe</h3>
+
+    <div class="diagram">
+      <div class="pipeline">
+        <div class="pipeline-step">Frame<br><small>entrada</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step highlight">BlazeFace<br><small>detector</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step">ROI Calculator<br><small>bbox + rotación</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step green">Image Cropping<br><small>affine warp</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step highlight">Face Landmark<br><small>468 pts</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step">Landmark<br><small>→ frame coords</small></div>
+      </div>
+      <p style="text-align:center;font-size:0.8rem;margin-top:1rem;color:var(--text-muted)">En tracking mode, el siguiente frame salta BlazeFace y va directo al ROI Calculator con el bbox anterior</p>
+    </div>
+
+    <div class="callout info">
+      <span class="icon">🔍</span>
+      <p>MediaPipe usa <strong>affine warp</strong> (no simple crop rectangular) para el ROI de landmarks. Esto permite alinear la cara aplicando una pequeña rotación, lo que mejora la precisión del landmark model. El ROI está definido por 4 puntos, no por (x,y,w,h).</p>
+    </div>
+
+    <h3>Intervenir externamente — crop manual antes de MediaPipe</h3>
+    <pre><code><span class="kw">import</span> mediapipe <span class="kw">as</span> mp
+<span class="kw">import</span> cv2
+
+mp_face <span class="op">=</span> mp.solutions.face_mesh
+mp_draw <span class="op">=</span> mp.solutions.drawing_utils
+
+<span class="cm"># Puntos clave de MediaPipe Face Mesh</span>
+NOSE_TIP    <span class="op">=</span> <span class="num">4</span>
+LEFT_EYE    <span class="op">=</span> [<span class="num">33</span>, <span class="num">7</span>, <span class="num">163</span>, <span class="num">144</span>, <span class="num">145</span>, <span class="num">153</span>, <span class="num">154</span>, <span class="num">155</span>, <span class="num">133</span>]
+RIGHT_EYE   <span class="op">=</span> [<span class="num">362</span>, <span class="num">382</span>, <span class="num">381</span>, <span class="num">380</span>, <span class="num">374</span>, <span class="num">373</span>, <span class="num">390</span>, <span class="num">249</span>, <span class="num">263</span>]
+LIPS        <span class="op">=</span> [<span class="num">61</span>, <span class="num">185</span>, <span class="num">40</span>, <span class="num">39</span>, <span class="num">37</span>, <span class="num">0</span>, <span class="num">267</span>, <span class="num">269</span>, <span class="num">270</span>, <span class="num">409</span>, <span class="num">291</span>]
+FACE_OVAL   <span class="op">=</span> [<span class="num">10</span>,<span class="num">338</span>,<span class="num">297</span>,<span class="num">332</span>,<span class="num">284</span>,<span class="num">251</span>,<span class="num">389</span>,<span class="num">356</span>,<span class="num">454</span>,<span class="num">323</span>,<span class="num">361</span>,
+              <span class="num">288</span>,<span class="num">397</span>,<span class="num">365</span>,<span class="num">379</span>,<span class="num">378</span>,<span class="num">400</span>,<span class="num">377</span>,<span class="num">152</span>,<span class="num">148</span>,<span class="num">176</span>,<span class="num">149</span>,<span class="num">150</span>,
+              <span class="num">136</span>,<span class="num">172</span>,<span class="num">58</span>,<span class="num">132</span>,<span class="num">93</span>,<span class="num">234</span>,<span class="num">127</span>,<span class="num">162</span>,<span class="num">21</span>,<span class="num">54</span>,<span class="num">103</span>,<span class="num">67</span>,<span class="num">109</span>]
+
+<span class="kw">with</span> mp_face.<span class="fn">FaceMesh</span>(
+    static_image_mode<span class="op">=</span><span class="tp">False</span>,
+    max_num_faces<span class="op">=</span><span class="num">1</span>,
+    refine_landmarks<span class="op">=</span><span class="tp">False</span>,   <span class="cm"># sin iris → ~1ms menos</span>
+    min_detection_confidence<span class="op">=</span><span class="num">0.5</span>,
+    min_tracking_confidence<span class="op">=</span><span class="num">0.4</span>  <span class="cm"># bajo → menos redetecciones</span>
+) <span class="kw">as</span> face_mesh:
+
+    <span class="cm"># Pasar solo el ROI al modelo</span>
+    x1,y1,x2,y2 <span class="op">=</span> roi_tracker.<span class="fn">update</span>(frame)
+    roi <span class="op">=</span> frame[y1:y2, x1:x2]
+    roi_rgb <span class="op">=</span> cv2.<span class="fn">cvtColor</span>(roi, cv2.COLOR_BGR2RGB)
+
+    results <span class="op">=</span> face_mesh.<span class="fn">process</span>(roi_rgb)
+
+    <span class="kw">if</span> results.multi_face_landmarks:
+        lm <span class="op">=</span> results.multi_face_landmarks[<span class="num">0</span>]
+        roi_h, roi_w <span class="op">=</span> roi.shape[:2]
+
+        <span class="cm"># Reescalar al frame completo</span>
+        pts <span class="op">=</span> {
+            i: (
+                <span class="tp">int</span>(lm.landmark[i].x <span class="op">*</span> roi_w) <span class="op">+</span> x1,
+                <span class="tp">int</span>(lm.landmark[i].y <span class="op">*</span> roi_h) <span class="op">+</span> y1
+            )
+            <span class="kw">for</span> i <span class="kw">in</span> LEFT_EYE <span class="op">+</span> RIGHT_EYE <span class="op">+</span> LIPS <span class="op">+</span> [NOSE_TIP]
+        }
+
+        <span class="cm"># Dibujar solo los puntos relevantes</span>
+        <span class="kw">for</span> (x, y) <span class="kw">in</span> pts.values():
+            cv2.<span class="fn">circle</span>(frame, (x,y), <span class="num">2</span>, (<span class="num">0</span>,<span class="num">255</span>,<span class="num">0</span>), <span class="op">-</span><span class="num">1</span>)</code></pre>
+
+    <h3>Submodelo de iris — ROI dentro de ROI</h3>
+    <pre><code><span class="cm"># El iris model de MediaPipe usa un ROI de solo el ojo</span>
+<span class="cm"># Se activa con refine_landmarks=True</span>
+<span class="cm"># Internamente: extrae crop del ojo desde el face ROI</span>
+
+<span class="cm"># Si lo querés manual:</span>
+LEFT_IRIS   <span class="op">=</span> [<span class="num">468</span>, <span class="num">469</span>, <span class="num">470</span>, <span class="num">471</span>, <span class="num">472</span>]
+RIGHT_IRIS  <span class="op">=</span> [<span class="num">473</span>, <span class="num">474</span>, <span class="num">475</span>, <span class="num">476</span>, <span class="num">477</span>]
+
+<span class="cm"># ROI del ojo izquierdo a partir de landmarks conocidos</span>
+eye_pts <span class="op">=</span> np.<span class="fn">array</span>([pts[i] <span class="kw">for</span> i <span class="kw">in</span> LEFT_EYE])
+eye_x1, eye_y1 <span class="op">=</span> eye_pts.<span class="fn">min</span>(axis<span class="op">=</span><span class="num">0</span>)
+eye_x2, eye_y2 <span class="op">=</span> eye_pts.<span class="fn">max</span>(axis<span class="op">=</span><span class="num">0</span>)
+
+<span class="cm"># Expandir 40% para el iris — necesita más contexto que la cara</span>
+eye_roi_bbox <span class="op">=</span> <span class="fn">expand_bbox</span>(eye_x1, eye_y1, eye_x2, eye_y2, margin<span class="op">=</span><span class="num">0.4</span>)
+eye_roi <span class="op">=</span> frame[eye_roi_bbox[<span class="num">1</span>]:eye_roi_bbox[<span class="num">3</span>],
+                eye_roi_bbox[<span class="num">0</span>]:eye_roi_bbox[<span class="num">2</span>]]</code></pre>
+  </div>
+</section>
+
+<!-- 8. RETINAFACE -->
+<section id="retinaface">
+  <div class="container">
+    <h2><span class="num">08</span>ROI en RetinaFace</h2>
+
+    <p>RetinaFace no tiene sistema de ROI/tracking nativo. Hay que implementarlo externamente. La ganancia es enorme porque su backbone FPN es costoso en el frame completo.</p>
+
+    <h3>Arquitectura FPN y por qué el ROI ayuda tanto</h3>
+    <p>RetinaFace usa una Feature Pyramid Network con anchors a múltiples escalas. El coste computacional escala con el área de la imagen procesada:</p>
+
+    <div class="formula">
+      FLOPs ≈ O(H × W × C²)<br>
+      <small>ROI de 30% de área → ~0.3× los FLOPs del frame completo</small>
+    </div>
+
+    <pre><code><span class="kw">from</span> retinaface <span class="kw">import</span> RetinaFace
+<span class="kw">import</span> cv2, numpy <span class="kw">as</span> np
+
+<span class="kw">class</span> <span class="tp">RetinaFaceROI</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, redetect_interval<span class="op">=</span><span class="num">15</span>, margin<span class="op">=</span><span class="num">0.25</span>):
+        self.interval <span class="op">=</span> redetect_interval
+        self.margin   <span class="op">=</span> margin
+        self.roi_bbox <span class="op">=</span> <span class="tp">None</span>
+        self.tracker  <span class="op">=</span> <span class="tp">None</span>
+        self.n <span class="op">=</span> <span class="num">0</span>
+
+    <span class="kw">def</span> <span class="fn">_detect_in_roi</span>(self, frame, roi_bbox):
+        x1,y1,x2,y2 <span class="op">=</span> roi_bbox
+        crop <span class="op">=</span> frame[y1:y2, x1:x2]
+        faces <span class="op">=</span> RetinaFace.<span class="fn">detect_faces</span>(crop)
+        <span class="kw">if not</span> <span class="tp">isinstance</span>(faces, <span class="tp">dict</span>):
+            <span class="kw">return</span> <span class="tp">None</span>
+
+        <span class="cm"># Traducir landmarks al espacio frame</span>
+        best <span class="op">=</span> faces[<span class="fn">list</span>(faces.keys())[<span class="num">0</span>]]
+        <span class="cm"># Landmarks: right_eye, left_eye, nose, mouth_right, mouth_left</span>
+        lm_roi <span class="op">=</span> best[<span class="str">'landmarks'</span>]
+        lm_frame <span class="op">=</span> {k: (v[<span class="num">0</span>]<span class="op">+</span>x1, v[<span class="num">1</span>]<span class="op">+</span>y1) <span class="kw">for</span> k,v <span class="kw">in</span> lm_roi.<span class="fn">items</span>()}
+
+        <span class="cm"># BBox también traducida</span>
+        fb <span class="op">=</span> best[<span class="str">'facial_area'</span>]
+        bbox_frame <span class="op">=</span> (fb[<span class="num">0</span>]<span class="op">+</span>x1, fb[<span class="num">1</span>]<span class="op">+</span>y1, fb[<span class="num">2</span>]<span class="op">+</span>x1, fb[<span class="num">3</span>]<span class="op">+</span>y1)
+
+        <span class="kw">return</span> {<span class="str">'bbox'</span>: bbox_frame, <span class="str">'landmarks'</span>: lm_frame,
+                <span class="str">'score'</span>: best[<span class="str">'score'</span>]}
+
+    <span class="kw">def</span> <span class="fn">process</span>(self, frame):
+        h, w <span class="op">=</span> frame.shape[:2]
+
+        <span class="kw">if</span> self.roi_bbox <span class="kw">is</span> <span class="tp">None</span> <span class="kw">or</span> self.n <span class="op">%</span> self.interval <span class="op">==</span> <span class="num">0</span>:
+            <span class="cm"># Detección completa</span>
+            faces <span class="op">=</span> RetinaFace.<span class="fn">detect_faces</span>(frame)
+            <span class="kw">if not</span> <span class="tp">isinstance</span>(faces, <span class="tp">dict</span>):
+                self.n <span class="op">+=</span> <span class="num">1</span>; <span class="kw">return</span> <span class="tp">None</span>
+            best <span class="op">=</span> faces[<span class="fn">list</span>(faces.keys())[<span class="num">0</span>]]
+            fa <span class="op">=</span> best[<span class="str">'facial_area'</span>]
+            self.roi_bbox <span class="op">=</span> <span class="fn">expand_bbox</span>(fa[<span class="num">0</span>],fa[<span class="num">1</span>],fa[<span class="num">2</span>],fa[<span class="num">3</span>],
+                                          self.margin, w, h)
+            self.tracker <span class="op">=</span> cv2.TrackerCSRT_create()
+            x1,y1,x2,y2 <span class="op">=</span> self.roi_bbox
+            self.tracker.<span class="fn">init</span>(frame, (x1,y1,x2<span class="op">-</span>x1,y2<span class="op">-</span>y1))
+            result <span class="op">=</span> self.<span class="fn">_detect_in_roi</span>(frame, self.roi_bbox)
+        <span class="kw">else</span>:
+            <span class="cm"># Tracking barato + detección en ROI</span>
+            ok, (tx,ty,tw,th) <span class="op">=</span> self.tracker.<span class="fn">update</span>(frame)
+            <span class="kw">if</span> ok:
+                self.roi_bbox <span class="op">=</span> <span class="fn">expand_bbox</span>(tx,ty,tx<span class="op">+</span>tw,ty<span class="op">+</span>th,self.margin,w,h)
+            result <span class="op">=</span> self.<span class="fn">_detect_in_roi</span>(frame, self.roi_bbox)
+
+        self.n <span class="op">+=</span> <span class="num">1</span>
+        <span class="kw">return</span> result</code></pre>
+
+    <div class="callout tip">
+      <span class="icon">✅</span>
+      <p><strong>Resultado típico:</strong> RetinaFace MobileNet0.25 en frame 640×480 → ~18ms. Con ROI al 25% del frame → ~4ms. Con CSRT tracking entre redetecciones → media ponderada ~2ms/frame a K=15.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 9. DEMO INTERACTIVO -->
+<section id="demo">
+  <div class="container">
+    <h2><span class="num">09</span>Demo Interactivo — ROI en Canvas</h2>
+    <p>Dibujá un ROI haciendo click y arrastrando. Podés ver en tiempo real la reducción de píxeles procesados.</p>
+
+    <div class="canvas-container">
+      <canvas id="roiCanvas" width="700" height="400"></canvas>
+      <div class="canvas-controls">
+        <button class="btn primary" onclick="clearROI()">Limpiar ROI</button>
+        <button class="btn" onclick="addNoise()">Simular frame</button>
+        <button class="btn" onclick="showMultiROI()">Multi-ROI</button>
+        <button class="btn" onclick="animateROI()">Animar tracking</button>
+      </div>
+      <div class="canvas-info" id="roiInfo">Hacé click y arrastrá para definir un ROI</div>
+    </div>
+
+    <script>
+    (function() {
+      const canvas = document.getElementById('roiCanvas');
+      const ctx = canvas.getContext('2d');
+      const info = document.getElementById('roiInfo');
+
+      let isDrawing = false;
+      let startX, startY, endX, endY;
+      let rois = [];
+      let animFrame = null;
+      let simFrame = null;
+
+      // Colores de múltiples ROIs
+      const roiColors = ['#6c63ff','#43e97b','#f7971e','#ff6584'];
+
+      function drawBase(frameData) {
+        // Fondo simulando imagen con "cara"
+        ctx.fillStyle = '#1a1d2e';
+        ctx.fillRect(0, 0, 700, 400);
+
+        // Gradiente de fondo tipo imagen
+        const grad = ctx.createRadialGradient(350, 200, 20, 350, 200, 200);
+        grad.addColorStop(0, 'rgba(108,99,255,0.08)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 700, 400);
+
+        // "Cara" simulada
+        if (frameData) {
+          const { cx, cy } = frameData;
+          // Silueta
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, 70, 90, 0, 0, Math.PI*2);
+          ctx.fillStyle = 'rgba(255,200,150,0.15)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,200,150,0.3)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
+
+          // Ojos
+          [[cx-25, cy-15],[cx+25, cy-15]].forEach(([ex,ey]) => {
+            ctx.beginPath();
+            ctx.ellipse(ex, ey, 12, 7, 0, 0, Math.PI*2);
+            ctx.strokeStyle = 'rgba(255,200,150,0.5)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(ex, ey, 4, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(80,50,30,0.7)';
+            ctx.fill();
+          });
+
+          // Nariz
+          ctx.beginPath();
+          ctx.moveTo(cx, cy-5);
+          ctx.lineTo(cx-8, cy+12);
+          ctx.lineTo(cx+8, cy+12);
+          ctx.strokeStyle = 'rgba(255,200,150,0.3)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Boca
+          ctx.beginPath();
+          ctx.arc(cx, cy+30, 18, 0.1*Math.PI, 0.9*Math.PI);
+          ctx.strokeStyle = 'rgba(200,100,100,0.5)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Landmarks (puntos)
+          const landmarkPts = [
+            [cx-25, cy-15],[cx+25, cy-15],
+            [cx, cy+5],[cx-15, cy+30],[cx+15, cy+30],
+            [cx-70, cy],[cx+70, cy],[cx, cy-80],[cx, cy+85]
+          ];
+          landmarkPts.forEach(([lx,ly]) => {
+            ctx.beginPath();
+            ctx.arc(lx, ly, 2.5, 0, Math.PI*2);
+            ctx.fillStyle = '#43e97b';
+            ctx.fill();
+          });
+        }
+
+        // Grid sutil
+        ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+        ctx.lineWidth = 1;
+        for (let x=0; x<700; x+=50) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,400); ctx.stroke(); }
+        for (let y=0; y<400; y+=50) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(700,y); ctx.stroke(); }
+
+        // Label resolución full frame
+        ctx.fillStyle = 'rgba(148,163,184,0.6)';
+        ctx.font = '11px monospace';
+        ctx.fillText('1920×1080 — frame completo', 10, 20);
+        ctx.fillText('100% píxeles', 10, 36);
+      }
+
+      function drawROI(x1, y1, x2, y2, color, label) {
+        const w = x2-x1, h = y2-y1;
+        const area = (w*h)/(700*400)*100;
+
+        // Overlay oscuro fuera del ROI
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(0,0,700,y1);
+        ctx.fillRect(0,y2,700,400-y2);
+        ctx.fillRect(0,y1,x1,h);
+        ctx.fillRect(x2,y1,700-x2,h);
+
+        // Borde del ROI
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        ctx.strokeRect(x1,y1,w,h);
+
+        // Esquinas decorativas
+        const cs = 12;
+        ctx.lineWidth = 3;
+        [[x1,y1,1,1],[x2,y1,-1,1],[x1,y2,1,-1],[x2,y2,-1,-1]].forEach(([cx,cy,dx,dy]) => {
+          ctx.beginPath(); ctx.moveTo(cx,cy+dy*cs); ctx.lineTo(cx,cy); ctx.lineTo(cx+dx*cs,cy);
+          ctx.strokeStyle = color; ctx.stroke();
+        });
+
+        // Label
+        ctx.fillStyle = color;
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(label || `ROI: ${Math.round(w)}×${Math.round(h)}px — ${area.toFixed(1)}% del frame`, x1+6, y1-6);
+
+        return area;
+      }
+
+      let frameData = { cx: 350, cy: 200 };
+
+      function render() {
+        drawBase(frameData);
+        if (rois.length > 0) {
+          rois.forEach((roi, i) => {
+            drawROI(roi.x1, roi.y1, roi.x2, roi.y2, roiColors[i % roiColors.length], roi.label);
+          });
+        }
+        if (isDrawing && startX !== undefined) {
+          const cx = Math.min(startX, endX), cy = Math.min(startY, endY);
+          const cw = Math.abs(endX-startX), ch = Math.abs(endY-startY);
+          const area = (cw*ch)/(700*400)*100;
+          ctx.strokeStyle = '#6c63ff';
+          ctx.setLineDash([5,3]);
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(cx,cy,cw,ch);
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#6c63ff';
+          ctx.font = '11px monospace';
+          ctx.fillText(`${Math.round(cw)}×${Math.round(ch)} — ${area.toFixed(1)}%`, cx+4, cy-4);
+        }
+      }
+
+      canvas.addEventListener('mousedown', e => {
+        const r = canvas.getBoundingClientRect();
+        startX = (e.clientX-r.left)*(700/r.width);
+        startY = (e.clientY-r.top)*(400/r.height);
+        endX = startX; endY = startY;
+        isDrawing = true;
+        if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+      });
+
+      canvas.addEventListener('mousemove', e => {
+        if (!isDrawing) return;
+        const r = canvas.getBoundingClientRect();
+        endX = (e.clientX-r.left)*(700/r.width);
+        endY = (e.clientY-r.top)*(400/r.height);
+        render();
+      });
+
+      canvas.addEventListener('mouseup', e => {
+        if (!isDrawing) return;
+        isDrawing = false;
+        const r = canvas.getBoundingClientRect();
+        endX = (e.clientX-r.left)*(700/r.width);
+        endY = (e.clientY-r.top)*(400/r.height);
+        const x1=Math.min(startX,endX), y1=Math.min(startY,endY);
+        const x2=Math.max(startX,endX), y2=Math.max(startY,endY);
+        if (Math.abs(x2-x1) < 10 || Math.abs(y2-y1) < 10) { render(); return; }
+        const area = ((x2-x1)*(y2-y1))/(700*400)*100;
+        const reduction = (100-area).toFixed(1);
+        rois = [{x1,y1,x2,y2}];
+        info.textContent = `ROI: ${Math.round(x2-x1)}×${Math.round(y2-y1)}px · ${area.toFixed(1)}% del frame · reducción de cómputo: ~${reduction}%`;
+        render();
+      });
+
+      window.clearROI = function() {
+        rois = [];
+        frameData = { cx: 350, cy: 200 };
+        if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+        info.textContent = 'Hacé click y arrastrá para definir un ROI';
+        render();
+      };
+
+      window.addNoise = function() {
+        rois = [];
+        frameData = { cx: 350+Math.random()*20-10, cy: 200+Math.random()*20-10 };
+        info.textContent = 'Frame simulado — sin ROI: 100% píxeles procesados';
+        render();
+      };
+
+      window.showMultiROI = function() {
+        if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+        frameData = { cx: 350, cy: 200 };
+        rois = [
+          { x1:280, y1:110, x2:420, y2:290, label:'ROI Cara' },
+          { x1:295, y1:140, x2:342, y2:175, label:'ROI Ojo izq' },
+          { x1:358, y1:140, x2:405, y2:175, label:'ROI Ojo der' },
+          { x1:310, y1:215, x2:390, y2:255, label:'ROI Boca' },
+        ];
+        const totalArea = rois.reduce((s,r) => s+(r.x2-r.x1)*(r.y2-r.y1),0)/(700*400)*100;
+        info.textContent = `Multi-ROI jerárquico: Cara → Ojos → Boca. Área total: ${totalArea.toFixed(1)}% del frame`;
+        render();
+      };
+
+      window.animateROI = function() {
+        if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+        let t = 0;
+        function step() {
+          t += 0.02;
+          const cx = 350 + Math.sin(t)*120;
+          const cy = 200 + Math.cos(t*0.7)*60;
+          frameData = { cx, cy };
+          const margin = 80;
+          rois = [{
+            x1: Math.max(0,cx-margin), y1: Math.max(0,cy-margin*1.2),
+            x2: Math.min(700,cx+margin), y2: Math.min(400,cy+margin*1.2),
+            label: 'ROI Dinámico (tracking)'
+          }];
+          const area = ((rois[0].x2-rois[0].x1)*(rois[0].y2-rois[0].y1))/(700*400)*100;
+          info.textContent = `Tracking activo — ROI siguiendo la cara · ${area.toFixed(1)}% del frame procesado`;
+          render();
+          animFrame = requestAnimationFrame(step);
+        }
+        step();
+      };
+
+      render();
+    })();
+    </script>
+  </div>
+</section>
+
+<!-- 10. COMPARATIVA -->
+<section id="comparativa">
+  <div class="container">
+    <h2><span class="num">10</span>Comparativa y Guía de Decisión</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Estrategia</th>
+            <th>Latencia típica</th>
+            <th>Implementación</th>
+            <th>Robustez ante movimiento</th>
+            <th>Mejor para</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Sin ROI (frame completo)</strong></td>
+            <td>30–60ms</td>
+            <td>Trivial</td>
+            <td>Alta (siempre redetecta)</td>
+            <td>Prototipado, caras pequeñas</td>
+          </tr>
+          <tr>
+            <td><strong>ROI estático</strong></td>
+            <td>5–15ms</td>
+            <td>Trivial</td>
+            <td>Baja (falla si mueve)</td>
+            <td>Cámara fija, quiosco</td>
+          </tr>
+          <tr>
+            <td><strong>ROI dinámico (detect cada frame)</strong></td>
+            <td>8–20ms</td>
+            <td>Simple</td>
+            <td>Alta</td>
+            <td>Balance calidad/velocidad</td>
+          </tr>
+          <tr>
+            <td><strong>ROI + Tracking (KCF)</strong></td>
+            <td>1–5ms</td>
+            <td>Media</td>
+            <td>Media (drift acumulado)</td>
+            <td>CPU, bajo consumo, IoT</td>
+          </tr>
+          <tr>
+            <td><strong>ROI + Tracking (CSRT)</strong></td>
+            <td>2–7ms</td>
+            <td>Media</td>
+            <td>Alta</td>
+            <td>CPU con más recursos</td>
+          </tr>
+          <tr>
+            <td><strong>ROI + Kalman</strong></td>
+            <td>0.5–3ms</td>
+            <td>Avanzada</td>
+            <td>Alta (predice, no solo sigue)</td>
+            <td>Alta velocidad, robotica</td>
+          </tr>
+          <tr>
+            <td><strong>Multi-ROI jerárquico</strong></td>
+            <td>5–15ms</td>
+            <td>Avanzada</td>
+            <td>Alta</td>
+            <td>Análisis facial detallado</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Checklist de implementación</h3>
+    <div class="grid-2">
+      <div class="card accent-green">
+        <h4>✅ Antes de implementar</h4>
+        <p>¿Cuántos sujetos simultáneos necesitás? ¿Qué velocidad de movimiento esperás? ¿Cuánto presupuesto de latencia tenés? ¿CPU, GPU o NPU?</p>
+      </div>
+      <div class="card accent-purple">
+        <h4>🔲 Puntos críticos</h4>
+        <p>Siempre clampear coords al frame. Siempre expandir bbox con margin. Reescalar landmarks al espacio original. Testear casos de cara parcialmente visible.</p>
+      </div>
+      <div class="card accent-orange">
+        <h4>⚡ Quick wins de latencia</h4>
+        <p>Bajar resolución de entrada. Desactivar <code>refine_landmarks</code> en MediaPipe. Aumentar K (redetectar menos seguido). Usar INTER_LINEAR en resize.</p>
+      </div>
+      <div class="card accent-pink">
+        <h4>🐛 Bugs comunes</h4>
+        <p>Olvidar reescalar landmarks del ROI al frame. Usar vista NumPy en vez de copia (race conditions). No clampear coords (IndexError). Margen insuficiente (landmarks en el borde).</p>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <span class="icon">🚀</span>
+      <p><strong>Regla de oro:</strong> Empezá sin ROI para validar el pipeline. Añadí ROI estático para medir la ganancia base. Añadí tracking solo si la ganancia del ROI estático no es suficiente. Añadí Kalman solo si el tracking introduce demasiado drift para tu caso de uso.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>ROI en Visión por Computador · MediaPipe · RetinaFace · OpenCV · NumPy</p>
+  <p style="margin-top:0.5rem;font-size:0.75rem">Proyecto Dualiza — Recupera Tu Voz</p>
+</footer>
+
+</body>
+</html>

@@ -59,6 +59,7 @@ class _LogopedaResumenScreenState extends State<LogopedaResumenScreen> {
       final headers = {
         'Authorization': 'Bearer ${widget.user.token}',
         'Content-Type': 'application/json',
+        ...kNgrokHeaders,
       };
       final results = await Future.wait([
         RolesService(widget.user.token).getMisPacientes(),
@@ -73,11 +74,13 @@ class _LogopedaResumenScreenState extends State<LogopedaResumenScreen> {
         stats = _FichasStats.fromJson(jsonDecode(statsRes.body) as Map<String, dynamic>);
       }
 
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _pacientes = pacientes;
         _fichasStats = stats;
         _loading = false;
       });
+      }
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }

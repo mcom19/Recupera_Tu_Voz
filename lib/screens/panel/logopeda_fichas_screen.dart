@@ -47,6 +47,7 @@ class _FichasService {
   Map<String, String> get _h => {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer $token',
+    ...kNgrokHeaders,
   };
 
   Future<List<FichaLogopeda>> getMisFichas() async {
@@ -788,8 +789,11 @@ class _AsignarSheetState extends State<_AsignarSheet> {
                         return CheckboxListTile(
                           value: sel,
                           onChanged: (v) => setState(() {
-                            if (v == true) _selected.add(p.userId);
-                            else _selected.remove(p.userId);
+                            if (v == true) {
+                              _selected.add(p.userId);
+                            } else {
+                              _selected.remove(p.userId);
+                            }
                           }),
                           activeColor: c.accent,
                           title: Text(p.name.isNotEmpty ? p.name : p.email,
