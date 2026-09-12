@@ -27,6 +27,7 @@ migrate_working_dir/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
@@ -51,3 +52,13 @@ voice_backend/voices/
 voice_backend/voice_app.db
 voice_backend/*.db
 voice_backend/.env
+
+# Config local de revisión con credenciales de prueba (no compartir).
+# Plantilla sin secretos en lib/debug_config.example.dart (esa sí va a git).
+lib/debug_config.dart
+
+# Sueltos que no son código fuente del proyecto (backups/capturas
+# olvidados en la raíz del repo)
+/lib.zip
+/voz.zip
+/ss

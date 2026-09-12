@@ -65,4 +65,19 @@ class SettingsService {
       DateTime.now().millisecondsSinceEpoch,
     );
   }
+
+  // ── Bienvenida (pantalla "Inicio") ──────────────────────────────
+  // Se muestra solo la primera vez que el paciente entra a la app;
+  // a partir de ahí se abre directamente en la pestaña de Texto.
+  static const _keySeenWelcome = 'has_seen_welcome';
+
+  Future<bool> hasSeenWelcome() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keySeenWelcome) ?? false;
+  }
+
+  Future<void> markWelcomeSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keySeenWelcome, true);
+  }
 }

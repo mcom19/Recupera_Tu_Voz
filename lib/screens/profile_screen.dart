@@ -159,7 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(title: const Text('Perfil')),
+      appBar: AppBar(title: const Text('Ajustes')),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         children: [
