@@ -7,6 +7,7 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../theme/app_theme.dart';
+import '../widgets/voz_menu_card.dart';
 
 // ─────────────────────────────────────────────────────────────────
 // Frases guiadas — variedad tonal y fonética en castellano
@@ -395,10 +396,9 @@ class _RecordVoiceScreenState extends State<RecordVoiceScreen>
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: c.accent.withValues(alpha: 0.3)),
+                  decoration: vozCardDecoration(
+                    radius: 16,
+                    borderColor: c.accent.withValues(alpha: 0.3),
                   ),
                   child: Column(
                     children: [
@@ -446,17 +446,17 @@ class _RecordVoiceScreenState extends State<RecordVoiceScreen>
                         margin: const EdgeInsets.only(bottom: 6),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: sel
-                              ? c.accent.withValues(alpha: 0.1)
-                              : c.surface,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: sel
-                                ? c.accent.withValues(alpha: 0.4)
-                                : c.border.withValues(alpha: 0.4),
-                          ),
-                        ),
+                        decoration: sel
+                            ? BoxDecoration(
+                                color: c.accent.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: c.accent.withValues(alpha: 0.4)),
+                              )
+                            : vozCardDecoration(
+                                radius: 10,
+                                borderColor: c.border.withValues(alpha: 0.4),
+                                shadow: false,
+                              ),
                         child: Text(
                           _kFrases[i],
                           style: TextStyle(
@@ -519,10 +519,9 @@ class _RecordVoiceScreenState extends State<RecordVoiceScreen>
           // Frase en pantalla
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: c.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: c.accent.withValues(alpha: 0.2)),
+            decoration: vozCardDecoration(
+              radius: 16,
+              borderColor: c.accent.withValues(alpha: 0.2),
             ),
             child: Text(
               _kFrases[_selectedFrase],
@@ -851,11 +850,7 @@ class _QualityBar extends StatelessWidget {
     final labels = ['Básico', 'Bueno', 'Óptimo'];
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: c.border.withValues(alpha: 0.4)),
-      ),
+      decoration: vozCardDecoration(radius: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

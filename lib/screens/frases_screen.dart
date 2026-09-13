@@ -9,12 +9,30 @@ import '../services/settings_service.dart';
 import '../services/tts_service.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/main_app_bar.dart';
 import '../widgets/shared_widgets.dart';
+import '../widgets/voz_connection_status_card.dart';
+import '../widgets/voz_menu_card.dart';
 
 class FrasesScreen extends StatefulWidget {
   final AppSettings settings;
   final AppUser? user;
-  const FrasesScreen({super.key, required this.settings, this.user});
+  // Indica si esta es la pestaña actualmente visible. Con IndexedStack,
+  // las 5 pantallas se construyen todas a la vez desde el arranque, así
+  // que sin esto _loadFrases() (y su posible aviso de "sin conexión")
+  // se disparaba siempre al abrir la app, aunque el usuario aterrizara
+  // en otra pestaña. Ver initState/didUpdateWidget más abajo.
+  final bool active;
+  final VoidCallback onVozTap;
+  final VoidCallback onClasesTap;
+  const FrasesScreen({
+    super.key,
+    required this.settings,
+    this.user,
+    required this.active,
+    required this.onVozTap,
+    required this.onClasesTap,
+  });
 
   @override
   State<FrasesScreen> createState() => _FrasesScreenState();
@@ -35,6 +53,11 @@ class _FrasesScreenState extends State<FrasesScreen> {
 
   int? _activeIndex;
   int? _sharingIndex;
+
+  // Evita relanzar la carga (y su posible aviso de "sin conexión") más
+  // de una vez: solo se dispara la primera vez que la pestaña de Frases
+  // pasa a estar activa, ya sea desde el arranque o al navegar a ella.
+  bool _hasLoaded = false;
 
   @override
   void initState() {
@@ -59,48 +82,70 @@ class _FrasesScreenState extends State<FrasesScreen> {
     };
 
     _tts.init();
-    _loadFrases();
+
+    if (widget.active) {
+      _hasLoaded = true;
+      _loadFrases();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant FrasesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Primera vez que el usuario entra a la pestaña "Frases": la carga
+    // (y su aviso de catálogo offline, si procede) se pospone hasta
+    // este momento en vez de dispararse al arrancar la app.
+    if (!_hasLoaded && !oldWidget.active && widget.active) {
+      _hasLoaded = true;
+      _loadFrases();
+    }
   }
 
   Future<void> _loadFrases() async {
+    // Nota: la caché de este catálogo la gestiona FrasesApiService por
+    // sí sola (con su propio TTL y su propio fallback a caché
+    // caducada). Antes también se guardaba una copia en SettingsService
+    // bajo la misma clave de SharedPreferences pero con otro tipo de
+    // dato (String vs. StringList), lo que corrompía esa clave y podía
+    // provocar el error "Modo offline" incluso con el servidor bien.
+    // Se ha retirado ese guardado duplicado; ver FrasesApiService.
     final api = FrasesApiService();
-
-    final cached = await _settingsSvc.loadCachedFrasesDefault();
     final personales = await _settingsSvc.loadFrasesPersonales();
-
-    if (mounted && cached.isNotEmpty) {
-      setState(() {
-        _frasesDefault = cached;
-        _frasesPersonales = personales;
-        _loadingDefault = false;
-      });
-    }
 
     try {
       final defaults = await api.fetchDefault();
 
       if (mounted) {
         setState(() {
-          _frasesDefault = defaults.cast<FraseItem>();
+          _frasesDefault = defaults;
           _frasesPersonales = personales;
           _loadingDefault = false;
         });
+
+        if (api.lastUsedBundledFallback) {
+          // Sin red y sin caché aprovechable: se está mostrando el
+          // catálogo básico embebido en la app (borrador pendiente de
+          // revisión por la logopeda) en vez del catálogo completo del
+          // servidor.
+          showVozConnectionSnackBar(
+            context,
+            message: 'Sin conexión: mostrando el catálogo básico de frases',
+            actionLabel: 'Reintentar',
+            onAction: _loadFrases,
+          );
+        }
       }
-
-      await _settingsSvc.saveCachedFrasesDefault(defaults.cast<FraseItem>());
-
     } catch (_) {
-      if (mounted && cached.isEmpty) {
+      // Solo debería llegar aquí ante un fallo inesperado (p. ej. que
+      // ni siquiera el catálogo básico embebido se pudiera leer).
+      if (mounted) {
         setState(() => _loadingDefault = false);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Error cargando frases. Modo offline'),
-            action: SnackBarAction(
-              label: 'Reintentar',
-              onPressed: _loadFrases,
-            ),
-          ),
+        showVozConnectionSnackBar(
+          context,
+          message: 'Error cargando frases. Modo offline',
+          actionLabel: 'Reintentar',
+          onAction: _loadFrases,
         );
       }
     }
@@ -294,7 +339,12 @@ class _FrasesScreenState extends State<FrasesScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(title: const Text('Frases rápidas')),
+      appBar: MainAppBar(
+        title: 'Frases',
+        vozPendiente: !(widget.user?.hasVoice ?? false),
+        onVozTap: widget.onVozTap,
+        onClasesTap: widget.onClasesTap,
+      ),
       body: Column(
         children: [
           Padding(
@@ -443,18 +493,20 @@ class _FraseTileState extends State<_FraseTile>
           scale: _scale,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              color: widget.isActive
-                  ? _accent.withValues(alpha: 0.15)
-                  : c.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: widget.isActive
-                    ? _accent.withValues(alpha: 0.8)
-                    : _accent.withValues(alpha: 0.3),
-                width: widget.isActive ? 1.5 : 1,
-              ),
-            ),
+            // Base "card" igual que el resto de la app; se conserva el
+            // color por categoría en el borde y la franja lateral (más
+            // abajo), que es cómo el paciente distingue de un vistazo el
+            // tipo de frase — no depende solo del fondo.
+            decoration: widget.isActive
+                ? BoxDecoration(
+                    color: _accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _accent.withValues(alpha: 0.8), width: 1.5),
+                  )
+                : vozCardDecoration(
+                    radius: 14,
+                    borderColor: _accent.withValues(alpha: 0.3),
+                  ),
             child: Stack(
               children: [
                 Positioned(

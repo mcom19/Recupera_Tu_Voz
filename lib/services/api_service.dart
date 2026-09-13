@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:recupera_tu_voz/models/frase_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -253,10 +254,21 @@ class FrasesApiService {
   static const _cacheKey     = 'frases_default_cache';
   static const _cacheTimeKey = 'frases_default_cache_time';
   static const _ttlHours     = 24; // caché válida 24 horas
+  static const _bundledAsset = 'assets/data/frases_base.json';
 
-  /// Devuelve las frases del servidor, con caché local de 24 h.
-  /// Si no hay red, devuelve la caché aunque haya expirado.
+  /// Si `fetchDefault()` tuvo que recurrir al catálogo básico embebido
+  /// en la app (sin red y sin caché aprovechable) en su última llamada.
+  /// La pantalla lo usa para avisar de que se está viendo el catálogo
+  /// reducido, no la lista completa del servidor.
+  bool lastUsedBundledFallback = false;
+
+  /// Devuelve las frases del servidor, con caché local de 24 h. Si no
+  /// hay red y tampoco hay caché aprovechable (p. ej. primer arranque
+  /// de un paciente recién dado de alta, con el servidor caído en ese
+  /// momento), recurre al catálogo básico embebido en la app —
+  /// `loadBundledDefault()`— para que nunca se quede sin frases.
   Future<List<FraseItem>> fetchDefault() async {
+    lastUsedBundledFallback = false;
     final p = await SharedPreferences.getInstance();
 
     // ¿Tenemos caché válida?
@@ -265,7 +277,7 @@ class FrasesApiService {
     final cacheValid = age < _ttlHours * 3600 * 1000;
 
     if (cacheValid) {
-      final raw = p.getString(_cacheKey);
+      final raw = _safeGetCache(p);
       if (raw != null) return _parse(raw);
     }
 
@@ -285,10 +297,37 @@ class FrasesApiService {
       // Sin red → caer al fallback
     }
 
-    // Fallback: caché expirada o vacía → lista vacía (la pantalla la gestiona)
-    final stale = p.getString(_cacheKey);
+    // Caché expirada pero aprovechable: mejor una lista desactualizada
+    // que ninguna.
+    final stale = _safeGetCache(p);
     if (stale != null) return _parse(stale);
-    return [];
+
+    // Último recurso: catálogo básico embebido en la app (ni red ni
+    // caché disponibles).
+    lastUsedBundledFallback = true;
+    return loadBundledDefault();
+  }
+
+  /// Catálogo básico de frases por categoría, empaquetado como asset
+  /// de la app: no depende de red ni de una caché previa. Es un
+  /// borrador inicial (pendiente de revisión por la logopeda del
+  /// proyecto) pensado solo como red de seguridad — no sustituye al
+  /// catálogo completo del servidor, evita que la app se quede sin
+  /// frases cuando no hay ninguna otra fuente disponible.
+  Future<List<FraseItem>> loadBundledDefault() async {
+    final raw = await rootBundle.loadString(_bundledAsset);
+    return _parse(raw);
+  }
+
+  /// Lee la caché de frases protegiendo frente a un valor de tipo
+  /// incorrecto bajo la misma clave (defensivo: una versión anterior
+  /// de la app llegó a guardar ahí un dato de otro tipo).
+  String? _safeGetCache(SharedPreferences p) {
+    try {
+      return p.getString(_cacheKey);
+    } catch (_) {
+      return null;
+    }
   }
 
   List<FraseItem> _parse(String json) {

@@ -8,12 +8,22 @@ import '../models/voz_emocion.dart';
 import '../services/tts_service.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/main_app_bar.dart';
 import '../widgets/shared_widgets.dart';
+import '../widgets/voz_menu_card.dart';
 
 class TextScreen extends StatefulWidget {
   final AppSettings settings;
   final AppUser? user;
-  const TextScreen({super.key, required this.settings, this.user});
+  final VoidCallback onVozTap;
+  final VoidCallback onClasesTap;
+  const TextScreen({
+    super.key,
+    required this.settings,
+    this.user,
+    required this.onVozTap,
+    required this.onClasesTap,
+  });
 
   @override
   State<TextScreen> createState() => _TextScreenState();
@@ -137,14 +147,15 @@ class _TextScreenState extends State<TextScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(
-        title: const Text('Texto a voz'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: _VoiceEngineBadge(usingClonedVoice: usingClonedVoice),
-          ),
-        ],
+      appBar: MainAppBar(
+        title: 'Escribir',
+        // El estado "usando voz clonada / voz del sistema" ya lo señala
+        // el punto rojo sobre el icono VOZ (vozPendiente); se retiró la
+        // insignia "Sistema"/"Mi voz" que iba aquí para que esta AppBar
+        // sea igual que la del resto de pantallas (solo Voz y Clases).
+        vozPendiente: !(widget.user?.hasVoice ?? false),
+        onVozTap: widget.onVozTap,
+        onClasesTap: widget.onClasesTap,
       ),
       // El body es scrollable para que el teclado no cause overflow
       body: SingleChildScrollView(
@@ -157,11 +168,7 @@ class _TextScreenState extends State<TextScreen> {
             const SizedBox(height: 8),
             Container(
               height: 170,
-              decoration: BoxDecoration(
-                color: c.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: c.border),
-              ),
+              decoration: vozCardDecoration(radius: 14),
               child: TextField(
                 controller: _controller,
                 maxLines: null,
@@ -256,11 +263,7 @@ class _ControlsToggle extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: c.border),
-        ),
+        decoration: vozCardDecoration(radius: 10),
         child: Row(
           children: [
             Icon(Icons.tune_rounded, size: 16, color: c.textMid),
@@ -297,11 +300,7 @@ class _ControlPanel extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(top: 6),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: c.border),
-      ),
+      decoration: vozCardDecoration(radius: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -393,38 +392,3 @@ class _ShareAudioButton extends StatelessWidget {
   }
 }
 
-class _VoiceEngineBadge extends StatelessWidget {
-  final bool usingClonedVoice;
-  const _VoiceEngineBadge({required this.usingClonedVoice});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AdaptiveColors.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: usingClonedVoice ? c.teal.withValues(alpha: 0.12) : c.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: usingClonedVoice ? c.teal : c.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            usingClonedVoice ? Icons.graphic_eq_rounded : Icons.speaker_phone_outlined,
-            size: 13,
-            color: usingClonedVoice ? c.teal : c.textDim,
-          ),
-          const SizedBox(width: 5),
-          Text(
-            usingClonedVoice ? 'Mi voz' : 'Sistema',
-            style: TextStyle(
-              color: usingClonedVoice ? c.teal : c.textDim,
-              fontSize: 11, fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

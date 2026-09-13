@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // ── Modo oscuro — colores del main.dart original ──────────────────
-  static const bg          = Color(0xFF1A1A2E);   // fondo original
+  static const bg          = Color(0xFF051027);   // fondo de todas las pantallas (antes 0xFF1A1A2E)
   static const surface     = Color(0xFF12121F);   // surface original
   static const surfaceHigh = Color(0xFF1F1F38);
   static const border      = Color(0xFF2A2A4A);
   static const accent      = Color(0xFF00E5CC);   // teal como principal (igual que main.dart)
   static const teal        = Color(0xFF00E5CC);
+  static const turquesa    = Color(0xFF1CE7B2);   // barra superior: misma línea de diseño en toda la app
   static const warn        = Color(0xFFFF5C5C);
   static const gold        = Color(0xFFFFB347);
   static const blue        = Color(0xFF0066FF);   // azul del gradiente del botón TTS
@@ -31,6 +32,43 @@ class AppColors {
   static const textMidLight     = Color(0xFF3A3A5C);
   static const textDimLight     = Color(0xFF7070A0);
 
+  // ── Cards de menú (VozMenuCard) ────────────────────────────────────
+  // Fijos en ambos temas (igual criterio que `turquesa` arriba): estas
+  // cards mantienen siempre el lenguaje visual "azul profundo" de la
+  // AppBar, tanto en modo claro como oscuro.
+  static const cardBgStart        = Color(0xFF0B1C36);
+  static const cardBgEnd          = Color(0xFF101D35);
+  static const cardBorder         = Color(0xFF203653);
+  static const cardIconBg         = Color(0xFF153052);
+  static const cardIconContent    = Color(0xFFDCEBFF);
+  static const cardTitle          = Color(0xFFF5F7FB);
+  static const cardSubtitle       = Color(0xFFAEB8C9);
+  static const cardChevron        = Color(0xFFAFC3E6);
+  static const cardAccentTurquesa = Color(0xFF16DFC1); // acento card "Privacidad"
+
+  // ── Barra de navegación inferior (VozBottomNavigationBar) ──────────
+  // Fijos en ambos temas (igual criterio que `turquesa`/cards arriba):
+  // turquesa suave que contrasta con el azul noche del resto de la
+  // app, en vez del tono oscuro anterior.
+  static const navBarBg         = Color(0xFF6ACBC3); // fondo de toda la barra
+  // Negro puro: el azul noche inicial (#071525) se leía con poco
+  // contraste en dispositivo real (iconos de contorno fino sobre
+  // turquesa), así que se cambia a negro para maximizar la
+  // legibilidad, a petición expresa.
+  static const navBarContent    = Color(0xFF000000); // iconos y labels, seleccionado o no
+  static const navBarSelectedBg = Color(0xFFA8E5DF); // "pill" del elemento activo
+
+  // ── Card de estado de conexión (VozConnectionStatusCard) ───────────
+  // Fijos en ambos temas: superficie translúcida pensada para
+  // destacar sobre el fondo azul noche de la app, sin degradados,
+  // neón ni glassmorphism.
+  static const statusCardBg         = Color(0x1AFFFFFF); // blanco, ~10% opacidad
+  static const statusCardBorder     = Color(0x24FFFFFF); // blanco, ~14% opacidad
+  static const statusCardIcon       = Color(0xFFD1D9E6);
+  static const statusCardAction     = Color(0xFF8FB4E5); // texto "Reintentar"
+  static const statusCardOfflineDot = Color(0xFFFF6B6B); // indicador sin conexión
+  static const statusCardLoading    = cardAccentTurquesa; // spinner "Conectando…"
+
   // ── Helper: color de categoría ────────────────────────────────────
   static Color catColor(String cat, {bool light = false}) {
     switch (cat) {
@@ -49,8 +87,11 @@ class AppColors {
 
 class AppTheme {
   // ── MODO OSCURO ───────────────────────────────────────────────────
-  static ThemeData get dark => ThemeData.dark().copyWith(
+  static ThemeData get dark {
+    final base = ThemeData.dark();
+    return base.copyWith(
     scaffoldBackgroundColor: AppColors.bg,
+    primaryTextTheme: base.primaryTextTheme.apply(fontFamily: 'Montserrat'),
     colorScheme: const ColorScheme.dark(
       primary:   AppColors.teal,
       secondary: AppColors.blue,
@@ -58,17 +99,21 @@ class AppTheme {
       error:     AppColors.warn,
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.turquesa,
+      foregroundColor: Colors.black,
       elevation: 0,
+      centerTitle: false,
       titleTextStyle: TextStyle(
-        color: AppColors.textPrimary,
+        color: Colors.black,
         fontSize: 18,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
+        fontFamily: 'Montserrat',
       ),
-      iconTheme: IconThemeData(color: AppColors.teal),
+      iconTheme: IconThemeData(color: Colors.black),
+      actionsIconTheme: IconThemeData(color: Colors.black),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.navBarBg,
       selectedItemColor:   AppColors.teal,
       unselectedItemColor: Color(0x61FFFFFF), // white38
       type: BottomNavigationBarType.fixed,
@@ -109,17 +154,21 @@ class AppTheme {
       backgroundColor: AppColors.teal,
       foregroundColor: AppColors.bg,
     ),
-    textTheme: const TextTheme(
+    textTheme: base.textTheme.apply(fontFamily: 'Montserrat').merge(const TextTheme(
       bodyLarge:  TextStyle(color: AppColors.textPrimary),
       bodyMedium: TextStyle(color: AppColors.textPrimary),
       bodySmall:  TextStyle(color: Color(0xB3FFFFFF)), // white70
       labelSmall: TextStyle(color: AppColors.textDim),
-    ),
-  );
+    )),
+    );
+  }
 
   // ── MODO CLARO ────────────────────────────────────────────────────
-  static ThemeData get light => ThemeData.light().copyWith(
+  static ThemeData get light {
+    final base = ThemeData.light();
+    return base.copyWith(
     scaffoldBackgroundColor: AppColors.bgLight,
+    primaryTextTheme: base.primaryTextTheme.apply(fontFamily: 'Montserrat'),
     colorScheme: const ColorScheme.light(
       primary:   AppColors.tealLight,
       secondary: AppColors.blueLight,
@@ -127,14 +176,18 @@ class AppTheme {
       error:     AppColors.warnLight,
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.bgLight,
+      backgroundColor: AppColors.turquesa,
+      foregroundColor: Colors.black,
       elevation: 0,
+      centerTitle: false,
       titleTextStyle: TextStyle(
-        color: AppColors.textPrimaryLight,
+        color: Colors.black,
         fontSize: 18,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
+        fontFamily: 'Montserrat',
       ),
-      iconTheme: IconThemeData(color: AppColors.tealLight),
+      iconTheme: IconThemeData(color: Colors.black),
+      actionsIconTheme: IconThemeData(color: Colors.black),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: AppColors.surfaceLight,
@@ -178,13 +231,14 @@ class AppTheme {
       backgroundColor: AppColors.tealLight,
       foregroundColor: AppColors.bgLight,
     ),
-    textTheme: const TextTheme(
+    textTheme: base.textTheme.apply(fontFamily: 'Montserrat').merge(const TextTheme(
       bodyLarge:  TextStyle(color: AppColors.textPrimaryLight),
       bodyMedium: TextStyle(color: AppColors.textPrimaryLight),
       bodySmall:  TextStyle(color: AppColors.textMidLight),
       labelSmall: TextStyle(color: AppColors.textDimLight),
-    ),
-  );
+    )),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -202,6 +256,26 @@ class AdaptiveColors {
   Color get border      => _d ? AppColors.border       : AppColors.borderLight;
   Color get accent      => _d ? AppColors.accent       : AppColors.accentLight;
   Color get teal        => _d ? AppColors.teal         : AppColors.tealLight;
+  Color get turquesa    => AppColors.turquesa; // misma barra superior en ambos modos
+  Color get navBarBg         => AppColors.navBarBg; // misma barra inferior en ambos modos
+  Color get navBarContent    => AppColors.navBarContent;
+  Color get navBarSelectedBg => AppColors.navBarSelectedBg;
+
+  Color get statusCardBg         => AppColors.statusCardBg;
+  Color get statusCardBorder     => AppColors.statusCardBorder;
+  Color get statusCardIcon       => AppColors.statusCardIcon;
+  Color get statusCardAction     => AppColors.statusCardAction;
+  Color get statusCardOfflineDot => AppColors.statusCardOfflineDot;
+  Color get statusCardLoading    => AppColors.statusCardLoading;
+  Color get cardBgStart        => AppColors.cardBgStart;
+  Color get cardBgEnd          => AppColors.cardBgEnd;
+  Color get cardBorder         => AppColors.cardBorder;
+  Color get cardIconBg         => AppColors.cardIconBg;
+  Color get cardIconContent    => AppColors.cardIconContent;
+  Color get cardTitle          => AppColors.cardTitle;
+  Color get cardSubtitle       => AppColors.cardSubtitle;
+  Color get cardChevron        => AppColors.cardChevron;
+  Color get cardAccentTurquesa => AppColors.cardAccentTurquesa;
   Color get warn        => _d ? AppColors.warn         : AppColors.warnLight;
   Color get gold        => _d ? AppColors.gold         : AppColors.goldLight;
   Color get blue        => _d ? AppColors.blue         : AppColors.blueLight;

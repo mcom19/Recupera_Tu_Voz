@@ -10,11 +10,19 @@ import 'dart:convert';
 
 import '../models/app_user.dart';
 import '../theme/app_theme.dart';
+import '../widgets/main_app_bar.dart';
 import '../services/api_service.dart'; // para kServerUrl
 
 class LipScreen extends StatefulWidget {
   final AppUser? user;
-  const LipScreen({super.key, this.user});
+  final VoidCallback onVozTap;
+  final VoidCallback onClasesTap;
+  const LipScreen({
+    super.key,
+    this.user,
+    required this.onVozTap,
+    required this.onClasesTap,
+  });
 
   @override
   State<LipScreen> createState() => _LipScreenState();
@@ -237,10 +245,11 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(
-        backgroundColor: c.bg,
-        title: Text('Lectura de labios', style: TextStyle(color: c.textPrimary)),
-        centerTitle: true,
+      appBar: MainAppBar(
+        title: 'Labios',
+        vozPendiente: !(widget.user?.hasVoice ?? false),
+        onVozTap: widget.onVozTap,
+        onClasesTap: widget.onClasesTap,
       ),
       body: SafeArea(child: _buildBody()),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'voz_menu_card.dart';
 
 // ── Animated waveform bar ─────────────────────────────────────────
 class WaveBar extends StatefulWidget {
@@ -227,11 +228,7 @@ class AccentTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AdaptiveColors.of(context);
     return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: c.border, width: 1.2),
-        borderRadius: BorderRadius.circular(10),
-        color: c.surface,
-      ),
+      decoration: vozCardDecoration(radius: 10),
       child: TextField(
         controller: controller,
         maxLines: expands ? null : maxLines,

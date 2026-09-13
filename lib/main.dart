@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'debug_config.dart';
 import 'models/app_settings.dart';
 import 'models/app_user.dart';
+import 'screens/ajustes/ajustes_home_screen.dart';
 import 'screens/clone_voice_screen.dart';
 import 'screens/frases_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/lip_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/profile_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/text_screen.dart';
 import 'services/api_service.dart';
@@ -15,6 +15,8 @@ import 'services/settings_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/app_router.dart';
 import 'screens/trabajo_screen.dart';
+import 'widgets/mouth_icon.dart';
+import 'widgets/voz_bottom_nav.dart';
 
 // Los flags y credenciales del bypass temporal de login viven ahora en
 // `lib/debug_config.dart` (fuera de git, ver .gitignore) para que la
@@ -235,9 +237,9 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  // Arranca en Texto (índice 1): Frases ocupa la posición 0 en la
+  // Arranca en Escribir (índice 1): Frases ocupa la posición 0 en la
   // barra por ser la de alcance más rápido, pero el aterrizaje por
-  // defecto al abrir la app es Texto.
+  // defecto al abrir la app es Escribir.
   int _tabIndex = 1;
   bool _showCloneVoice = false;
 
@@ -267,7 +269,7 @@ class _AppShellState extends State<AppShell> {
     if (mounted) {
       setState(() {
         _showWelcome = false;
-        _tabIndex = 1; // Texto, tras pulsar "Empezar"
+        _tabIndex = 1; // Escribir, tras pulsar "Empezar"
       });
     }
   }
@@ -287,6 +289,10 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _goToTab(int i) => setState(() => _tabIndex = i);
+
+  // Accesos directos compartidos por la AppBar de todas las pantallas.
+  void _openCloneVoice() => setState(() => _showCloneVoice = true);
+  void _goToClases() => _goToTab(3);
 
   @override
   Widget build(BuildContext context) {
@@ -324,24 +330,48 @@ class _AppShellState extends State<AppShell> {
           _updateUser(_user.copyWith(hasVoice: false, numReferences: 0));
         },
         onDone: () => setState(() => _showCloneVoice = false),
+        onGoToClases: () => setState(() {
+          _showCloneVoice = false;
+          _tabIndex = 3;
+        }),
       );
     }
 
     // ── Las 5 pantallas de navegación ──────────────────────────
     // Orden pensado para uso a una mano: Frases primero (necesidades
-    // más urgentes al alcance más rápido del pulgar), luego Texto,
-    // Labios y Trabajo —los tres canales/actividades de uso diario—
-    // y Ajustes al final (antes "Perfil", uso esporádico).
+    // más urgentes al alcance más rápido del pulgar), luego Escribir
+    // (antes "Texto"), Labios y Práctica (antes "Trabajo") —los tres
+    // canales/actividades de uso diario— y Ajustes al final (antes
+    // "Perfil", uso esporádico).
     final screens = [
-      FrasesScreen(settings: widget.settings, user: _user),
-      TextScreen(settings: widget.settings, user: _user),
-      LipScreen(user: _user),
-      TrabajoScreen(user: _user),
-      ProfileScreen(
+      FrasesScreen(
+        settings: widget.settings,
+        user: _user,
+        active: _tabIndex == 0,
+        onVozTap: _openCloneVoice,
+        onClasesTap: _goToClases,
+      ),
+      TextScreen(
+        settings: widget.settings,
+        user: _user,
+        onVozTap: _openCloneVoice,
+        onClasesTap: _goToClases,
+      ),
+      LipScreen(
+        user: _user,
+        onVozTap: _openCloneVoice,
+        onClasesTap: _goToClases,
+      ),
+      TrabajoScreen(
+        user: _user,
+        onVozTap: _openCloneVoice,
+      ),
+      AjustesHomeScreen(
         settings: widget.settings,
         user: _user,
         onSettingsChanged: widget.onSettingsChanged,
-        onCloneVoice: () => setState(() => _showCloneVoice = true),
+        onCloneVoice: _openCloneVoice,
+        onGoToClases: _goToClases,
         onLogout: widget.onLogout,
         onUserChanged: _updateUser,
       ),
@@ -349,30 +379,27 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       body: IndexedStack(index: _tabIndex, children: screens),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: VozBottomNavigationBar(
         currentIndex: _tabIndex,
         onTap: _goToTab,
-        selectedItemColor: const Color(0xFF1CE7B2),
-        unselectedItemColor: const Color(0x61FFFFFF),
-        backgroundColor: const Color(0xFF12121F),
         items: const [
-          BottomNavigationBarItem(
+          VozBottomNavItem(
               icon: Icon(Icons.grid_view_outlined),
               activeIcon: Icon(Icons.grid_view),
               label: 'Frases'),
-          BottomNavigationBarItem(
+          VozBottomNavItem(
               icon: Icon(Icons.keyboard_outlined),
               activeIcon: Icon(Icons.keyboard),
-              label: 'Texto'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.face_outlined),
-              activeIcon: Icon(Icons.face),
+              label: 'Escribir'),
+          VozBottomNavItem(
+              icon: MouthIcon(),
+              activeIcon: MouthIcon(filled: true),
               label: 'Labios'),
-          BottomNavigationBarItem(
+          VozBottomNavItem(
               icon: Icon(Icons.assignment_outlined),
               activeIcon: Icon(Icons.assignment_rounded),
-              label: 'Trabajo'),
-          BottomNavigationBarItem(
+              label: 'Práctica'),
+          VozBottomNavItem(
               icon: Icon(Icons.settings_outlined),
               activeIcon: Icon(Icons.settings),
               label: 'Ajustes'),
