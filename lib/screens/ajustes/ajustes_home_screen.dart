@@ -11,10 +11,12 @@ import 'privacidad_screen.dart';
 import 'sesion_screen.dart';
 
 /// Pantalla principal de "Ajustes": un menú con los distintos apartados,
-/// cada uno en su propia pantalla. "Clonar mi voz" va destacado en un
-/// color propio (dorado) mientras el paciente no tenga voz clonada, por
-/// ser el paso fundacional sin el cual Texto y Frases no pueden sonar
-/// con su voz.
+/// cada uno en su propia pantalla. "Clonar mi voz" va destacada con un
+/// borde más marcado mientras el paciente no tenga voz clonada, por ser
+/// el paso fundacional sin el cual Texto y Frases no pueden sonar con su
+/// voz — en turquesa, igual que el resto de tarjetas de estado de "mi
+/// voz" en la app (antes era dorado, se unificó para tener la misma
+/// UI).
 class AjustesHomeScreen extends StatelessWidget {
   final AppSettings settings;
   final AppUser user;
@@ -158,11 +160,12 @@ class _VoiceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AdaptiveColors.of(context);
-    // Destacada en dorado mientras no haya voz clonada (es la acción
-    // pendiente más importante de la app); una vez clonada pasa a un
-    // tono neutro de estado, ya sin urgencia visual.
+    // Mientras no haya voz clonada, el borde es más marcado (es la
+    // acción pendiente más importante de la app); una vez clonada, el
+    // mismo borde pasa a un peso neutro. El color es turquesa en los
+    // dos casos, igual que el resto de tarjetas de estado de "mi voz".
     final highlight = !user.hasVoice;
-    final color = highlight ? c.gold : c.teal;
+    final color = c.teal;
 
     return GestureDetector(
       onTap: onTap,

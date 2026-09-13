@@ -1,6 +1,7 @@
 // lib/screens/lip_screen.dart
 
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -83,14 +84,21 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
 
   // ── Cámara ─────────────────────────────────────────────────────
   Future<void> _initCamera() async {
-    final camStatus = await Permission.camera.request();
-    final micStatus = await Permission.microphone.request();
+    // `permission_handler` no tiene una implementación real en Flutter
+    // Web: el permiso de cámara/micrófono en el navegador lo pide y
+    // gestiona el propio `getUserMedia` (vía `camera_web`) al llamar a
+    // `availableCameras()`/`CameraController.initialize()` más abajo,
+    // así que en web nos saltamos este paso.
+    if (!kIsWeb) {
+      final camStatus = await Permission.camera.request();
+      final micStatus = await Permission.microphone.request();
 
-    if (!camStatus.isGranted || !micStatus.isGranted) {
-      if (mounted) {
-        setState(() => _errorMsg = 'Se necesitan permisos de cámara y micrófono.');
+      if (!camStatus.isGranted || !micStatus.isGranted) {
+        if (mounted) {
+          setState(() => _errorMsg = 'Se necesitan permisos de cámara y micrófono.');
+        }
+        return;
       }
-      return;
     }
 
     try {
@@ -176,10 +184,20 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
     try {
       final token = widget.user?.token ?? '';
       final uri = Uri.parse('$kServerUrl/lipreading/speak');
+      // Se sube por bytes (no por ruta de fichero): en Flutter Web
+      // `videoFile.path` es una blob URL, no una ruta de disco real, y
+      // `http.MultipartFile.fromPath` necesita `dart:io`, que no existe
+      // en el navegador. `readAsBytes()` sí funciona en ambas
+      // plataformas.
+      final videoBytes = await videoFile.readAsBytes();
       final request = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer $token'
         ..headers.addAll(kNgrokHeaders)
-        ..files.add(await http.MultipartFile.fromPath('video', videoFile.path));
+        ..files.add(http.MultipartFile.fromBytes(
+          'video',
+          videoBytes,
+          filename: kIsWeb ? 'video.webm' : 'video.mp4',
+        ));
 
       final streamed = await request.send().timeout(const Duration(seconds: 120));
 
@@ -213,16 +231,28 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
     } catch (e) {
       if (mounted) setState(() { _state = _LipState.error; _errorMsg = e.toString(); });
     } finally {
-      try { await File(videoFile.path).delete(); } catch (_) {}
+      // En web `videoFile.path` es una blob URL, no un fichero real:
+      // no hay nada que borrar del disco ahí.
+      if (!kIsWeb) {
+        try { await File(videoFile.path).delete(); } catch (_) {}
+      }
     }
   }
 
   Future<void> _playAudio(List<int> bytes) async {
     try {
-      final dir = await Directory.systemTemp.createTemp('lip_audio');
-      final file = File('${dir.path}/audio.wav');
-      await file.writeAsBytes(bytes);
-      await _audioPlayer.setFilePath(file.path);
+      if (kIsWeb) {
+        // No hay disco real en el navegador: se reproduce directamente
+        // desde memoria como data URL en vez de escribir un fichero
+        // temporal con `dart:io` (que no existe en web).
+        final base64Audio = base64Encode(bytes);
+        await _audioPlayer.setUrl('data:audio/wav;base64,$base64Audio');
+      } else {
+        final dir = await Directory.systemTemp.createTemp('lip_audio');
+        final file = File('${dir.path}/audio.wav');
+        await file.writeAsBytes(bytes);
+        await _audioPlayer.setFilePath(file.path);
+      }
       await _audioPlayer.play();
     } catch (e) {
       debugPrint('Error reproduciendo audio: $e');

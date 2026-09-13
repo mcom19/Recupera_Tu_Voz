@@ -3,15 +3,19 @@ import 'package:flutter/material.dart';
 /// AppBar compartida por toda la app: misma línea de diseño en todas
 /// las pantallas — imagen de fondo (assets/images/appbar.png), un velo
 /// oscuro sutil encima para garantizar contraste, contenido en blanco,
-/// título a la izquierda. A la derecha siempre pueden aparecer dos
-/// accesos directos ("Mi voz" y "Clases"), más las acciones propias que
-/// cada pantalla necesite (extraActions).
+/// título a la izquierda. A la derecha puede aparecer el acceso directo
+/// a "Mi voz", más las acciones propias que cada pantalla necesite
+/// (extraActions).
 ///
 /// - "Mi voz" recuerda clonar la voz mientras el paciente no la tenga
 ///   (icono con punto rojo) y da acceso directo a esa pantalla.
-/// - "Clases" lleva a "Práctica", donde están las clases asignadas por
-///   la logopeda. Ocúltalo con `showClasesAction: false` en la propia
-///   pantalla de Práctica, para no enlazar una pantalla consigo misma.
+/// - El acceso directo a "Clases" que había junto a "Mi voz" se ha
+///   retirado: ya existe la pestaña "Práctica" en la barra inferior, así
+///   que era redundante. `showClasesAction`/`onClasesTap` se mantienen
+///   en la API del widget (para no tocar todas las pantallas que los
+///   pasan) pero por defecto no se muestran; si algún día hiciera falta
+///   recuperar el acceso directo, basta con pasar `showClasesAction:
+///   true` en esa pantalla en concreto.
 ///
 /// El contenido se pinta en blanco (no en negro) porque la imagen de
 /// fondo es mayoritariamente azul marino oscuro: el negro apenas se
@@ -37,7 +41,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showVozAction = true,
     this.vozPendiente = false,
     this.onVozTap,
-    this.showClasesAction = true,
+    this.showClasesAction = false,
     this.onClasesTap,
     this.extraActions,
     this.leading,
@@ -56,6 +60,12 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
       centerTitle: false,
       leading: leading,
       automaticallyImplyLeading: automaticallyImplyLeading,
+      // El ThemeData global fija iconTheme/actionsIconTheme del AppBar en
+      // negro (pensado para otra pantalla); sin este override, la flecha
+      // de volver que Flutter genera solo con `automaticallyImplyLeading`
+      // hereda ese negro aunque el resto de esta AppBar sea blanca.
+      iconTheme: const IconThemeData(color: foreground),
+      actionsIconTheme: const IconThemeData(color: foreground),
       flexibleSpace: const _AppBarBackground(),
       title: Text(
         title,

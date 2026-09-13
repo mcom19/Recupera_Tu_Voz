@@ -69,6 +69,12 @@ class AppColors {
   static const statusCardOfflineDot = Color(0xFFFF6B6B); // indicador sin conexión
   static const statusCardLoading    = cardAccentTurquesa; // spinner "Conectando…"
 
+  // ── Cards de colaboradores (fondo claro fijo) ──────────────────────
+  // Excepción deliberada al resto de cards (siempre navy): los
+  // logotipos de las entidades están pensados para fondo blanco, así
+  // que esta card es blanca en los dos temas, con texto oscuro.
+  static const collabCardBorder = Color(0xFFE3E7EF);
+
   // ── Helper: color de categoría ────────────────────────────────────
   static Color catColor(String cat, {bool light = false}) {
     switch (cat) {
@@ -267,6 +273,8 @@ class AdaptiveColors {
   Color get statusCardAction     => AppColors.statusCardAction;
   Color get statusCardOfflineDot => AppColors.statusCardOfflineDot;
   Color get statusCardLoading    => AppColors.statusCardLoading;
+
+  Color get collabCardBorder => AppColors.collabCardBorder;
   Color get cardBgStart        => AppColors.cardBgStart;
   Color get cardBgEnd          => AppColors.cardBgEnd;
   Color get cardBorder         => AppColors.cardBorder;

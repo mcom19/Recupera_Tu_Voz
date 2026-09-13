@@ -44,6 +44,7 @@ flutter:
     - assets/google_logo.png
     - assets/images/appbar.png
     - assets/data/frases_base.json
+    - assets/logos/
   fonts:
     - family: Montserrat
       fonts:

@@ -1,0 +1,7 @@
+services:
+  lipreading-api:
+    build: .
+    container_name: recupera_voz_lipreading_stub
+    ports:
+      - "8010:8010"
+    restart: unless-stopped
