@@ -121,10 +121,17 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
       );
 
       await ctrl.initialize();
-      await ctrl.setExposureMode(ExposureMode.auto);
-      await ctrl.setFocusMode(FocusMode.auto);
 
-      await ctrl.initialize();
+      // `camera_web` (la implementación que usa Flutter en el navegador)
+      // no tiene implementado el control manual de exposición/enfoque:
+      // lanza UnimplementedError y, si se llama sin comprobar la
+      // plataforma, aborta toda la inicialización de la cámara. En
+      // móvil sí funciona y conviene dejarlo en automático.
+      if (!kIsWeb) {
+        await ctrl.setExposureMode(ExposureMode.auto);
+        await ctrl.setFocusMode(FocusMode.auto);
+      }
+
       if (!mounted) return;
 
       setState(() {

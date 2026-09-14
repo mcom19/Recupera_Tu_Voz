@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import '../../models/app_user.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/main_app_bar.dart';
 
 class LogopedaVideosScreen extends StatelessWidget {
   final AppUser user;
@@ -17,7 +18,7 @@ class LogopedaVideosScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(title: const Text('Vídeos')),
+      appBar: MainAppBar(title: 'Vídeos', showVozAction: false),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(40),
         child: Column(

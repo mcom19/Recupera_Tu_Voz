@@ -7,20 +7,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/app_user.dart';
 
-// SERVIDOR CAÍDO (túnel ngrok) — apuntando de momento al backend de
-// lipreading local en Docker (ver /lipreading_backend en la raíz del
-// proyecto) para poder probar esa pantalla mientras se recupera el
-// servidor real. OJO: kServerUrl es una única constante que usan TODAS
-// las llamadas (auth, voice, frases, videos, lipreading), así que con
-// esto apuntado al stub local solo /lipreading/speak responderá de
-// verdad; el resto de pantallas que dependan del servidor darán error
-// de red (frases cae a su catálogo básico embebido; el login ya está
-// baipaseado por kOfflineBypass en debug_config.dart).
+// Servidor original (túnel ngrok), ya recuperado. kServerUrl es una
+// única constante que usan TODAS las llamadas (auth, voice, frases,
+// roles, fichas, exercises, videos, lipreading), así que apunta aquí
+// para que la app vuelva a hablar de verdad con el backend real.
 //
-// Para volver al servidor real cuando se recupere, comenta la línea de
-// abajo y descomenta esta:
-// const String kServerUrl = 'https://mirian-eriophyllous-serriedly.ngrok-free.dev';
-const String kServerUrl = 'http://localhost:8010';
+// Si vuelve a caerse el túnel y hace falta seguir probando "Labios" en
+// local mientras tanto, comenta la línea de abajo y descomenta esta
+// (levanta antes /lipreading_backend con Docker):
+// const String kServerUrl = 'http://localhost:8010';
+const String kServerUrl = 'https://mirian-eriophyllous-serriedly.ngrok-free.dev';
 
 /// Cabecera necesaria porque el backend está detrás de un túnel ngrok
 /// gratuito: sin ella, ngrok devuelve una página HTML de aviso en vez de

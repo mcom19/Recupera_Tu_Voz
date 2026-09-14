@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/app_user.dart';
 import '../../services/roles_service.dart';
+import '../../widgets/main_app_bar.dart';
 
 class LogopedaCodigoScreen extends StatefulWidget {
   final AppUser user;
@@ -87,11 +88,9 @@ class _LogopedaCodigoScreenState extends State<LogopedaCodigoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Código de vinculación'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black87,
+      appBar: MainAppBar(
+        title: 'Código de vinculación',
+        showVozAction: false,
       ),
       body: SafeArea(
         child: _loading

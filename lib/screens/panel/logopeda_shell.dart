@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../models/app_user.dart';
 import '../../models/app_settings.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/main_app_bar.dart';
 import 'logopeda_pacientes_screen.dart';
 import 'logopeda_fichas_screen.dart';
 import 'logopeda_videos_screen.dart';
@@ -115,7 +116,7 @@ class _LogopedaPerfilScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(title: const Text('Mi perfil')),
+      appBar: MainAppBar(title: 'Mi perfil', showVozAction: false),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
