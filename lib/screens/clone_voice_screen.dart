@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../widgets/main_app_bar.dart';
 import 'record_voice_screen.dart';
 
 class CloneVoiceScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class CloneVoiceScreen extends StatefulWidget {
 
   final Future<void> Function() onDelete;
   final VoidCallback onDone;
+  final VoidCallback? onGoToClases;
 
   const CloneVoiceScreen({
     super.key,
@@ -27,6 +29,7 @@ class CloneVoiceScreen extends StatefulWidget {
     required this.onUploadReplace,
     required this.onDelete,
     required this.onDone,
+    this.onGoToClases,
   });
 
   @override
@@ -145,10 +148,14 @@ class _CloneVoiceScreenState extends State<CloneVoiceScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(
-        title: const Text('Mi voz clonada'),
+      appBar: MainAppBar(
+        title: 'Mi voz clonada',
+        showVozAction: false, // ya estamos en esta pantalla
+        showClasesAction: widget.onGoToClases != null,
+        onClasesTap: widget.onGoToClases,
+        automaticallyImplyLeading: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
           onPressed: widget.onDone,
         ),
       ),

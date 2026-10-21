@@ -7,10 +7,13 @@ import '../models/app_user.dart';
 import '../services/api_service.dart';
 import '../services/roles_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/main_app_bar.dart';
+import '../widgets/voz_menu_card.dart';
 
 class TrabajoScreen extends StatefulWidget {
   final AppUser user;
-  const TrabajoScreen({super.key, required this.user});
+  final VoidCallback onVozTap;
+  const TrabajoScreen({super.key, required this.user, required this.onVozTap});
 
   @override
   State<TrabajoScreen> createState() => _TrabajoScreenState();
@@ -43,11 +46,14 @@ class _TrabajoScreenState extends State<TrabajoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(
-        title: const Text('Mi trabajo'),
-        actions: [
-          IconButton(tooltip: 'Actualizar', icon: const Icon(Icons.refresh_rounded), onPressed: _load),
-        ],
+      appBar: MainAppBar(
+        title: 'Práctica',
+        // El botón de refrescar que iba aquí era redundante: la lista ya
+        // tiene RefreshIndicator (deslizar hacia abajo). Se retira para
+        // que esta AppBar sea igual que la del resto de pantallas.
+        vozPendiente: !widget.user.hasVoice,
+        onVozTap: widget.onVozTap,
+        showClasesAction: false, // ya estamos en Práctica/Clases
       ),
       body: _buildBody(),
     );
@@ -141,10 +147,9 @@ class _FichaTile extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: completada ? c.teal.withValues(alpha: 0.4) : c.border),
+        decoration: vozCardDecoration(
+          radius: 14,
+          borderColor: completada ? c.teal.withValues(alpha: 0.4) : null,
         ),
         child: Row(children: [
           Container(
@@ -197,7 +202,11 @@ class _FichaDetalleScreen extends StatelessWidget {
     final c = AdaptiveColors.of(context);
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(title: Text(ficha.name)),
+      appBar: MainAppBar(
+        title: ficha.name,
+        showVozAction: false,
+        showClasesAction: false,
+      ),
       body: ListView(padding: const EdgeInsets.all(20), children: [
         Wrap(spacing: 8, runSpacing: 8, children: [
           _InfoChip(icon: Icons.bar_chart_rounded, label: 'Nivel ${ficha.level}', color: c.accent),
@@ -491,9 +500,11 @@ class _PracticarScreenState extends State<_PracticarScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(
-        title: Text('Practicando: ${widget.ficha.name}'),
-        actions: [
+      appBar: MainAppBar(
+        title: 'Practicando: ${widget.ficha.name}',
+        showVozAction: false,
+        showClasesAction: false,
+        extraActions: [
           TextButton(
             onPressed: (_loading || _recording) ? null : _terminar,
             child: Text('Terminar', style: TextStyle(color: c.warn, fontWeight: FontWeight.w600)),
@@ -724,11 +735,7 @@ class _ResultadosScreen extends StatelessWidget {
                   ]),
                   const SizedBox(height: 20),
                   Container(
-                    decoration: BoxDecoration(
-                      color: c.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: c.border),
-                    ),
+                    decoration: vozCardDecoration(radius: 14),
                     constraints: const BoxConstraints(maxHeight: 240),
                     child: ListView.separated(
                       shrinkWrap: true,

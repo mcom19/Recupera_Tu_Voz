@@ -5,6 +5,7 @@ import '../../models/app_user.dart';
 import '../../services/api_service.dart';
 import '../../services/roles_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/main_app_bar.dart';
 
 // ── Modelo ficha ─────────────────────────────────────────────────
 
@@ -242,9 +243,10 @@ class _LogopedaFichasScreenState extends State<LogopedaFichasScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(
-        title: Text('Fichas${_fichas.isNotEmpty ? ' (${_fichas.length})' : ''}'),
-        actions: [
+      appBar: MainAppBar(
+        title: 'Fichas${_fichas.isNotEmpty ? ' (${_fichas.length})' : ''}',
+        showVozAction: false,
+        extraActions: [
           IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _load),
           IconButton(
             icon: const Icon(Icons.add_rounded),

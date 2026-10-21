@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../models/app_user.dart';
 import '../../services/roles_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/main_app_bar.dart';
 import 'logopeda_codigo_screen.dart';
 
 class LogopedaPacientesScreen extends StatefulWidget {
@@ -62,9 +63,10 @@ class _LogopedaPacientesScreenState extends State<LogopedaPacientesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(
-        title: Text('Mis pacientes${_pacientes.isNotEmpty ? ' (${_pacientes.length})' : ''}'),
-        actions: [
+      appBar: MainAppBar(
+        title: 'Mis pacientes${_pacientes.isNotEmpty ? ' (${_pacientes.length})' : ''}',
+        showVozAction: false,
+        extraActions: [
           IconButton(
             tooltip: 'Código de vinculación',
             icon: const Icon(Icons.link_rounded),
@@ -290,9 +292,10 @@ class _PacienteDetalleScreenState extends State<_PacienteDetalleScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(
-        title: Text(_p.name.isNotEmpty ? _p.name : 'Paciente'),
-        actions: [
+      appBar: MainAppBar(
+        title: _p.name.isNotEmpty ? _p.name : 'Paciente',
+        showVozAction: false,
+        extraActions: [
           if (_dirty)
             TextButton(
               onPressed: _saving ? null : _guardar,

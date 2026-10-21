@@ -21,6 +21,8 @@ dependencies:
   camera: ^0.11.0
   permission_handler: ^11.3.1
   record: ^6.0.0
+  google_mlkit_face_detection: ^0.13.1
+  google_mlkit_commons: ^0.11.0
 
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1
@@ -40,3 +42,19 @@ flutter:
   assets:
     - assets/icon.png
     - assets/google_logo.png
+    - assets/images/appbar.png
+    - assets/data/frases_base.json
+    - assets/logos/
+  fonts:
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/Montserrat-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/Montserrat-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/Montserrat-Variable.ttf
+          weight: 700
+        - asset: assets/fonts/Montserrat-Variable.ttf
+          weight: 800

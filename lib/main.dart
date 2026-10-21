@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'debug_config.dart';
 import 'models/app_settings.dart';
 import 'models/app_user.dart';
+import 'screens/ajustes/ajustes_home_screen.dart';
 import 'screens/clone_voice_screen.dart';
 import 'screens/frases_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/lip_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/profile_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/text_screen.dart';
 import 'services/api_service.dart';
@@ -15,6 +16,13 @@ import 'services/settings_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/app_router.dart';
 import 'screens/trabajo_screen.dart';
+import 'widgets/mouth_icon.dart';
+import 'widgets/voz_bottom_nav.dart';
+
+// Los flags y credenciales del bypass temporal de login viven ahora en
+// `lib/debug_config.dart` (fuera de git, ver .gitignore) para que la
+// contraseña de prueba nunca llegue al repositorio. Si ese archivo no
+// existe, cópialo desde `lib/debug_config.example.dart`.
 
 /// Ancho máximo del contenido de la app. En tablets/pantallas anchas evita
 /// que todo (formularios, botones, listas) se estire de borde a borde;
@@ -111,6 +119,20 @@ class _AppRootState extends State<AppRoot> {
       } catch (_) {}
     }
 
+    // ── BYPASS TEMPORAL DE LOGIN (ver aviso arriba) ────────────────
+    if (syncedUser == null && kAutoLoginForReview) {
+      try {
+        syncedUser = await _auth.login(
+          email: kReviewEmail,
+          password: kReviewPassword,
+        );
+        await _auth.saveUser(syncedUser);
+      } catch (e) {
+        // Si falla (backend caído, credenciales incorrectas, etc.)
+        // simplemente se cae a la pantalla de login normal.
+      }
+    }
+
     if (mounted) {
       setState(() {
         _user = syncedUser;
@@ -152,6 +174,22 @@ class _AppRootState extends State<AppRoot> {
 
   @override
   Widget build(BuildContext context) {
+    // ── BYPASS OFFLINE (ver aviso arriba) ───────────────────────────
+    // Se comprueba antes que nada: ni loading, ni login, ni llamadas
+    // de red — entra directo con el usuario ficticio.
+    if (kOfflineBypass) {
+      return AppShell(
+        user: kOfflineDebugUser,
+        settings: _settings,
+        onSettingsChanged: (s) {
+          setState(() => _settings = s);
+          RecuperaTuVozApp.of(context).setTheme(s.temaOscuro);
+        },
+        onUserChanged: (_) {}, // no-op: no hay sesión real que guardar
+        onLogout: () {},       // no-op: no hay sesión real que cerrar
+      );
+    }
+
     if (_loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -214,16 +252,41 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int _tabIndex = 0;
+  // Arranca en Escribir (índice 1): Frases ocupa la posición 0 en la
+  // barra por ser la de alcance más rápido, pero el aterrizaje por
+  // defecto al abrir la app es Escribir.
+  int _tabIndex = 1;
   bool _showCloneVoice = false;
+
+  // null mientras se comprueba; true = mostrar bienvenida (primera
+  // vez); false = ya vista, ir directo a las pestañas.
+  bool? _showWelcome;
+
   late AppUser _user;
 
   final VoiceApiService _voiceApi = VoiceApiService();
+  final SettingsService _settingsSvc = SettingsService();
 
   @override
   void initState() {
     super.initState();
     _user = widget.user;
+    _checkWelcome();
+  }
+
+  Future<void> _checkWelcome() async {
+    final seen = await _settingsSvc.hasSeenWelcome();
+    if (mounted) setState(() => _showWelcome = !seen);
+  }
+
+  Future<void> _dismissWelcome() async {
+    await _settingsSvc.markWelcomeSeen();
+    if (mounted) {
+      setState(() {
+        _showWelcome = false;
+        _tabIndex = 1; // Escribir, tras pulsar "Empezar"
+      });
+    }
   }
 
   @override
@@ -242,8 +305,20 @@ class _AppShellState extends State<AppShell> {
 
   void _goToTab(int i) => setState(() => _tabIndex = i);
 
+  // Accesos directos compartidos por la AppBar de todas las pantallas.
+  void _openCloneVoice() => setState(() => _showCloneVoice = true);
+  void _goToClases() => _goToTab(3);
+
   @override
   Widget build(BuildContext context) {
+    // ── Bienvenida: solo la primera vez que se entra a la app ──────
+    if (_showWelcome == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (_showWelcome == true) {
+      return HomeScreen(onEmpezar: _dismissWelcome);
+    }
+
     if (_showCloneVoice) {
       return CloneVoiceScreen(
         token: _user.token,
@@ -274,21 +349,48 @@ class _AppShellState extends State<AppShell> {
           _updateUser(_user.copyWith(hasVoice: false, numReferences: 0));
         },
         onDone: () => setState(() => _showCloneVoice = false),
+        onGoToClases: () => setState(() {
+          _showCloneVoice = false;
+          _tabIndex = 3;
+        }),
       );
     }
 
     // ── Las 5 pantallas de navegación ──────────────────────────
+    // Orden pensado para uso a una mano: Frases primero (necesidades
+    // más urgentes al alcance más rápido del pulgar), luego Escribir
+    // (antes "Texto"), Labios y Práctica (antes "Trabajo") —los tres
+    // canales/actividades de uso diario— y Ajustes al final (antes
+    // "Perfil", uso esporádico).
     final screens = [
-      HomeScreen(onEmpezar: () => _goToTab(1)),
-      TextScreen(settings: widget.settings, user: _user),
-      FrasesScreen(settings: widget.settings, user: _user),
-      TrabajoScreen(user: _user),
-      LipScreen(user: _user),
-      ProfileScreen(
+      FrasesScreen(
+        settings: widget.settings,
+        user: _user,
+        active: _tabIndex == 0,
+        onVozTap: _openCloneVoice,
+        onClasesTap: _goToClases,
+      ),
+      TextScreen(
+        settings: widget.settings,
+        user: _user,
+        onVozTap: _openCloneVoice,
+        onClasesTap: _goToClases,
+      ),
+      LipScreen(
+        user: _user,
+        onVozTap: _openCloneVoice,
+        onClasesTap: _goToClases,
+      ),
+      TrabajoScreen(
+        user: _user,
+        onVozTap: _openCloneVoice,
+      ),
+      AjustesHomeScreen(
         settings: widget.settings,
         user: _user,
         onSettingsChanged: widget.onSettingsChanged,
-        onCloneVoice: () => setState(() => _showCloneVoice = true),
+        onCloneVoice: _openCloneVoice,
+        onGoToClases: _goToClases,
         onLogout: widget.onLogout,
         onUserChanged: _updateUser,
       ),
@@ -296,37 +398,30 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       body: IndexedStack(index: _tabIndex, children: screens),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: VozBottomNavigationBar(
         currentIndex: _tabIndex,
         onTap: _goToTab,
-        selectedItemColor: const Color(0xFF1CE7B2),
-        unselectedItemColor: const Color(0x61FFFFFF),
-        backgroundColor: const Color(0xFF12121F),
         items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Inicio'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.keyboard_outlined),
-              activeIcon: Icon(Icons.keyboard),
-              label: 'Texto'),
-          BottomNavigationBarItem(
+          VozBottomNavItem(
               icon: Icon(Icons.grid_view_outlined),
               activeIcon: Icon(Icons.grid_view),
               label: 'Frases'),
-          BottomNavigationBarItem(
+          VozBottomNavItem(
+              icon: Icon(Icons.keyboard_outlined),
+              activeIcon: Icon(Icons.keyboard),
+              label: 'Escribir'),
+          VozBottomNavItem(
+              icon: MouthIcon(),
+              activeIcon: MouthIcon(filled: true),
+              label: 'Labios'),
+          VozBottomNavItem(
               icon: Icon(Icons.assignment_outlined),
               activeIcon: Icon(Icons.assignment_rounded),
-              label: 'Trabajo'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.face_outlined),
-              activeIcon: Icon(Icons.face),
-              label: 'Labios'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Perfil'),
+              label: 'Práctica'),
+          VozBottomNavItem(
+              icon: Icon(Icons.settings_outlined),
+              activeIcon: Icon(Icons.settings),
+              label: 'Ajustes'),
         ],
       ),
     );

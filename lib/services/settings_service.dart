@@ -42,6 +42,17 @@ class SettingsService {
   static const _keyFrasesDefaultCacheTime = 'frases_default_cache_time';
   static const _ttlHours = 24;
 
+  // ⚠️ NO USAR: `FrasesApiService` (services/api_service.dart) guarda su
+  // propia caché de frases por defecto bajo estas mismas claves de
+  // SharedPreferences, pero como String/int, no como StringList. Si
+  // algo vuelve a llamar a estos dos métodos, corrompe esa clave para
+  // FrasesApiService (que entonces puede lanzar una excepción de tipo
+  // al leerla) y puede provocar el aviso "Error cargando frases. Modo
+  // offline" incluso con el servidor funcionando con normalidad. Se
+  // dejan aquí solo por si algo externo aún los referencia; la carga y
+  // caché del catálogo de frases por defecto vive en FrasesApiService.
+
+  @Deprecated('Usa FrasesApiService.fetchDefault(); ver el aviso de arriba.')
   Future<List<FraseItem>> loadCachedFrasesDefault() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -54,6 +65,7 @@ class SettingsService {
     return raw.map((s) => FraseItem.fromJsonString(s)).toList();
   }
 
+  @Deprecated('Usa FrasesApiService.fetchDefault(); ver el aviso de arriba.')
   Future<void> saveCachedFrasesDefault(List<FraseItem> frases) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
@@ -64,5 +76,20 @@ class SettingsService {
       _keyFrasesDefaultCacheTime,
       DateTime.now().millisecondsSinceEpoch,
     );
+  }
+
+  // ── Bienvenida (pantalla "Inicio") ──────────────────────────────
+  // Se muestra solo la primera vez que el paciente entra a la app;
+  // a partir de ahí se abre directamente en la pestaña de Texto.
+  static const _keySeenWelcome = 'has_seen_welcome';
+
+  Future<bool> hasSeenWelcome() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keySeenWelcome) ?? false;
+  }
+
+  Future<void> markWelcomeSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keySeenWelcome, true);
   }
 }

@@ -1,0 +1,25 @@
+[
+  {"texto": "Necesito ayuda", "categoria": "Urgente"},
+  {"texto": "Me duele", "categoria": "Urgente"},
+  {"texto": "Llama a un familiar", "categoria": "Urgente"},
+  {"texto": "Necesito ir al baño", "categoria": "Urgente"},
+  {"texto": "Me cuesta respirar", "categoria": "Urgente"},
+
+  {"texto": "Hola", "categoria": "Saludos"},
+  {"texto": "Buenos días", "categoria": "Saludos"},
+  {"texto": "Gracias", "categoria": "Saludos"},
+  {"texto": "Adiós", "categoria": "Saludos"},
+
+  {"texto": "Tengo sed", "categoria": "Necesidades"},
+  {"texto": "Tengo hambre", "categoria": "Necesidades"},
+  {"texto": "Tengo frío", "categoria": "Necesidades"},
+  {"texto": "Tengo calor", "categoria": "Necesidades"},
+  {"texto": "Quiero descansar", "categoria": "Necesidades"},
+  {"texto": "Necesito mi medicación", "categoria": "Necesidades"},
+
+  {"texto": "Sí", "categoria": "Respuestas"},
+  {"texto": "No", "categoria": "Respuestas"},
+  {"texto": "No lo sé", "categoria": "Respuestas"},
+  {"texto": "Espera un momento", "categoria": "Respuestas"},
+  {"texto": "Estoy bien", "categoria": "Respuestas"}
+]

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recupera tu voz — Latencia en lectura de labios</title>
+<style>
+  :root {
+    --bg: #0f1420;
+    --surface: #171d2b;
+    --surface-2: #1e2534;
+    --border: #2a3244;
+    --text: #eef1f6;
+    --text-mid: #b5bcc9;
+    --text-dim: #7c8494;
+    --accent: #378ADD;
+    --teal: #1D9E75;
+    --gold: #BA7517;
+    --coral: #D85A30;
+    --red: #DC2626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 20px 80px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 40px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
+  header .kicker { color: var(--teal); font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+  h1 { font-size: 26px; font-weight: 700; margin: 0 0 8px; }
+  header .meta { color: var(--text-dim); font-size: 13px; }
+
+  section { margin-bottom: 40px; }
+  h2 {
+    font-size: 18px; font-weight: 700; color: var(--text);
+    border-left: 3px solid var(--teal); padding-left: 12px; margin: 0 0 16px;
+  }
+  h3 { font-size: 15px; font-weight: 700; margin: 20px 0 8px; color: var(--text); }
+  p { margin: 0 0 12px; color: var(--text-mid); }
+  strong { color: var(--text); }
+  code {
+    font-family: 'SF Mono', 'Courier New', monospace;
+    background: rgba(55,138,221,0.14); color: #9fc4ee;
+    padding: 2px 6px; border-radius: 5px; font-size: 13px;
+  }
+
+  .aviso {
+    display: flex; gap: 12px; padding: 14px 18px; border-radius: 10px;
+    margin: 14px 0; font-size: 14px;
+  }
+  .aviso .icon { font-size: 18px; flex-shrink: 0; }
+  .aviso.info   { background: rgba(55,138,221,0.10); border-left: 3px solid var(--accent); }
+  .aviso.warn   { background: rgba(186,117,23,0.10); border-left: 3px solid var(--gold); }
+  .aviso.ok     { background: rgba(29,158,117,0.10); border-left: 3px solid var(--teal); }
+  .aviso.error  { background: rgba(220,38,38,0.10); border-left: 3px solid var(--red); }
+  .aviso div p:last-child { margin-bottom: 0; }
+  .aviso strong { display: block; margin-bottom: 4px; }
+
+  /* Glosario */
+  .glosario { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .termino {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .termino .t { font-weight: 700; color: var(--teal); font-size: 13px; margin-bottom: 6px; }
+  .termino p { font-size: 13px; margin: 0; color: var(--text-mid); }
+
+  /* Pipeline */
+  .pipeline { display: flex; align-items: center; flex-wrap: wrap; gap: 0; margin: 18px 0; font-size: 12.5px; }
+  .pipeline .nodo {
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 14px; border-radius: 8px; font-weight: 700; text-align: center; min-width: 96px; flex-shrink: 0;
+  }
+  .pipeline .nodo.bug { border-color: var(--red); background: rgba(220,38,38,0.12); color: #f0a3a3; }
+  .pipeline .nodo small { display: block; font-weight: 400; font-size: 10.5px; color: var(--text-dim); margin-top: 3px; }
+  .pipeline .flecha { color: var(--text-dim); padding: 0 6px; flex-shrink: 0; }
+
+  /* Bug box */
+  .bugbox {
+    border: 1.5px solid var(--red); border-radius: 14px; overflow: hidden; margin: 16px 0;
+  }
+  .bugbox .cab {
+    background: rgba(220,38,38,0.14); padding: 12px 18px; font-weight: 700; color: #f0a3a3;
+    display: flex; align-items: center; gap: 10px; font-size: 14px;
+  }
+  .bugbox .cuerpo { padding: 16px 18px; }
+
+  pre {
+    background: #0a0e17; border: 1px solid var(--border); color: #cfd6e4;
+    padding: 14px 16px; border-radius: 10px; overflow-x: auto; margin: 10px 0 14px;
+    font-family: 'SF Mono', 'Courier New', monospace; font-size: 12.5px; line-height: 1.6;
+  }
+  pre .c { color: #64748b; }
+  pre .bad { color: #f0a3a3; }
+  pre .good { color: #7fd4ac; }
+
+  /* Comparativa antes/después */
+  .comparativa { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .comparativa .col { border-radius: 10px; padding: 12px 14px; font-size: 13px; }
+  .comparativa .col.malo  { background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.3); }
+  .comparativa .col.bueno { background: rgba(29,158,117,0.08); border: 1px solid rgba(29,158,117,0.3); }
+  .comparativa .col .tag { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+  .comparativa .malo .tag { color: #f0a3a3; }
+  .comparativa .bueno .tag { color: #7fd4ac; }
+
+  /* Fuentes de latencia */
+  .fuente {
+    display: flex; gap: 14px; padding: 14px 16px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px;
+  }
+  .fuente .peso {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; color: var(--bg);
+  }
+  .fuente .peso.alto { background: var(--red); }
+  .fuente .peso.medio { background: var(--gold); }
+  .fuente .peso.bajo { background: var(--text-dim); }
+  .fuente .contenido strong { display: block; font-size: 14px; margin-bottom: 3px; }
+  .fuente .contenido p { font-size: 13px; margin: 0; }
+
+  /* Plan de accion */
+  .fase { margin-bottom: 18px; }
+  .fase-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .fase-head .n {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--bg);
+    font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .fase-head h3 { margin: 0; font-size: 15px; }
+  .fase-head .plazo { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 999px; text-transform: uppercase; }
+  .fase-head .plazo.horas { background: rgba(29,158,117,0.15); color: #7fd4ac; }
+  .fase-head .plazo.dias { background: rgba(186,117,23,0.18); color: #efb85a; }
+  .fase-head .plazo.futuro { background: rgba(55,138,221,0.15); color: #85b7eb; }
+
+  .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; }
+  .checklist li { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; color: var(--text-mid); }
+  .checklist li input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--teal); flex-shrink: 0; }
+
+  footer {
+    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text-dim); text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Informe técnico interno</div>
+    <h1>Latencia en el servicio de lectura de labios</h1>
+    <div class="meta">Recupera tu voz · backend CMU-MOSEAS · 4 de agosto de 2026</div>
+  </header>
+
+  <section>
+    <h2>Resumen para el equipo</h2>
+    <div class="aviso info">
+      <span class="icon">💡</span>
+      <div>
+        <strong>En una frase:</strong>
+        <p>Las pruebas muestran una lectura de labios lenta en el servidor. Todo apunta a que el contenedor está calculando con la CPU en vez de con la GPU — un fallo de configuración, no un problema del modelo — más el retraso que añade el túnel gratuito que usamos para exponer el servidor. Antes de plantearnos cambiar de modelo, hay que descartar esto: son arreglos de horas, no de meses.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Glosario — para que todo el equipo parta del mismo punto</h2>
+    <div class="glosario">
+      <div class="termino">
+        <div class="t">Inferencia</div>
+        <p>Es el momento en que un modelo de IA ya entrenado recibe un dato nuevo (aquí, un vídeo) y calcula una predicción (el texto que cree que se ha dicho). No se aprende nada nuevo en ese momento — solo se aplican los cálculos que el modelo ya "sabe hacer". Es la parte que tarda cuando hablamos de "latencia".</p>
+      </div>
+      <div class="termino">
+        <div class="t">Pipeline</div>
+        <p>La cadena de pasos que transforma la entrada en la salida. En nuestro caso: cámara → detectar la cara → recortar los labios → acumular frames → pasar por el modelo → obtener el texto → convertirlo en audio. Cada eslabón añade su propio tiempo.</p>
+      </div>
+      <div class="termino">
+        <div class="t">GPU / CUDA</div>
+        <p>La GPU es un chip diseñado para hacer miles de cálculos simples en paralelo — ideal para redes neuronales. CUDA es la tecnología de NVIDIA que permite que PyTorch use esa GPU. Sin ella, PyTorch usa la CPU, que hace los mismos cálculos uno detrás de otro, mucho más despacio.</p>
+      </div>
+      <div class="termino">
+        <div class="t">Contenedor / imagen Docker</div>
+        <p>Un contenedor es un "paquete" con todo lo necesario para ejecutar un servicio (código, librerías, configuración) de forma aislada. La imagen es la plantilla con la que se crea. Si algo se instala mal al construir la imagen, el contenedor arranca igualmente pero con ese defecto dentro.</p>
+      </div>
+      <div class="termino">
+        <div class="t">Latencia vs. tiempo de red</div>
+        <p>Latencia es el tiempo total desde que pides algo hasta que llega la respuesta. Dentro de ese tiempo hay dos partes distintas: lo que tarda en viajar el vídeo por internet (red) y lo que tarda el modelo en procesarlo (inferencia). Hay que medir cada una por separado para saber a qué se debe la lentitud.</p>
+      </div>
+      <div class="termino">
+        <div class="t">Túnel / reverse proxy</div>
+        <p>Un túnel (como ngrok) expone un servidor que está en una red privada hacia internet, sin configuración de servidor propia. Es rápido de montar, pero en su versión gratuita tiene límites de ancho de banda y añade tiempo extra a cada petición. Un reverse proxy propio (nginx/Caddy) hace lo mismo pero sin esas limitaciones.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cómo funciona hoy el pipeline completo</h2>
+    <p>Esto es lo que ocurre cada vez que un paciente usa la pantalla de Labios, de principio a fin:</p>
+    <div class="pipeline">
+      <div class="nodo">📱 App<small>graba hasta 8s</small></div>
+      <div class="flecha">→</div>
+      <div class="nodo">🌐 Túnel ngrok<small>subida del vídeo</small></div>
+      <div class="flecha">→</div>
+      <div class="nodo">🔍 Preprocesado<small>MediaPipe + CLAHE</small></div>
+      <div class="flecha">→</div>
+      <div class="nodo bug">🧠 Inferencia<small>¿CPU en vez de GPU?</small></div>
+      <div class="flecha">→</div>
+      <div class="nodo">💬 Texto<small>reconocido</small></div>
+      <div class="flecha">→</div>
+      <div class="nodo">🔊 XTTS v2<small>voz clonada</small></div>
+    </div>
+    <p style="font-size:13px;">El paso marcado en rojo es, con lo que sabemos hoy, el sospechoso principal de la lentitud — y es justo donde entra el bug que explico a continuación.</p>
+  </section>
+
+  <section>
+    <h2>El bug: por qué probablemente está corriendo en CPU</h2>
+
+    <div class="bugbox">
+      <div class="cab">🐛 Conflicto de versión de PyTorch entre el Dockerfile y requirements.txt</div>
+      <div class="cuerpo">
+        <p>Ya encontramos este bug exacto en el servicio de síntesis de voz (<code>api</code>) al revisar el backend. El <code>Dockerfile</code> instala PyTorch con soporte para GPU (CUDA), pero justo después, <code>requirements.txt</code> vuelve a instalar PyTorch — esta vez la versión sin GPU (<code>+cpu</code>) — y esa segunda instalación pisa a la primera. Docker no avisa de esto: el contenedor arranca perfectamente, el servicio responde, pero por dentro está calculando con la CPU aunque tenga una GPU disponible y configurada.</p>
+
+        <div class="comparativa">
+          <div class="col malo">
+            <div class="tag">Lo que pasa ahora (sospecha)</div>
+            Dockerfile instala <code>torch+cu121</code> (GPU) → requirements.txt reinstala <code>torch+cpu</code> → gana la segunda instalación → el modelo corre en CPU sin que nadie lo note.
+          </div>
+          <div class="col bueno">
+            <div class="tag">Cómo debería ser</div>
+            Solo se instala <code>torch+cu121</code>, en un único paso, sin que ningún otro archivo lo vuelva a instalar por encima con la versión equivocada.
+          </div>
+        </div>
+
+        <p><strong>Por qué esto importa tanto para este modelo en concreto:</strong> el pipeline de lectura de labios procesa muchos frames de vídeo a la vez con una red de tipo 3D-CNN + atención — exactamente el tipo de cálculo que una GPU hace en paralelo y una CPU hace uno a uno. No es una diferencia de "un poco más lento": para este tipo de modelo, correr en CPU en vez de GPU suele significar entre 10 y 30 veces más tiempo por la misma predicción. Esa diferencia por sí sola puede explicar toda la latencia que estás viendo, sin que el modelo CMU-MOSEAS tenga ningún problema real.</p>
+
+        <p><strong>Importante — todavía no está confirmado para este servicio.</strong> El bug lo encontramos en el código del servicio de voz (<code>api</code>), que sí revisamos. El servicio de lectura de labios es un proyecto de código aparte (<code>backendlip.zip</code>) que no hemos podido revisar todavía porque la copia que tenemos llegó incompleta. Lo que proponemos abajo es exactamente cómo comprobar en minutos si se repite el mismo fallo ahí.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Otras fuentes de latencia (no descartar solo por arreglar el bug)</h2>
+
+    <div class="fuente">
+      <div class="peso alto">1</div>
+      <div class="contenido">
+        <strong>Túnel ngrok gratuito</strong>
+        <p>Sirve muy bien para desarrollo, pero tiene límites de ancho de banda y añade un salto de red extra. Un vídeo pesa mucho más que un audio de texto — subir 8 segundos de vídeo por un túnel gratuito puede tardar segundos por sí solo, antes de que el servidor haga nada.</p>
+      </div>
+    </div>
+
+    <div class="fuente">
+      <div class="peso medio">2</div>
+      <div class="contenido">
+        <strong>Sin reverse proxy propio</strong>
+        <p>Ya lo teníamos anotado como pendiente de seguridad (los puertos están expuestos directamente a internet). Resolverlo con un dominio propio y nginx/Caddy soluciona ese riesgo y de paso quita la limitación de ngrok — mismo arreglo, dos problemas.</p>
+      </div>
+    </div>
+
+    <div class="fuente">
+      <div class="peso medio">3</div>
+      <div class="contenido">
+        <strong>Posible acceso en fila al modelo</strong>
+        <p>En el servicio de voz vimos que solo un hilo puede usar el modelo a la vez — si llegan dos peticiones a la vez, la segunda espera. Si el servicio de labios está diseñado igual, dos pruebas seguidas o solapadas pueden parecer "muy lentas" sin que el modelo en sí sea el problema.</p>
+      </div>
+    </div>
+
+    <div class="fuente">
+      <div class="peso bajo">4</div>
+      <div class="contenido">
+        <strong>El propio diseño ya esperaba que pudiera tardar</strong>
+        <p>La documentación original fija un timeout de 60 segundos por petición para este endpoint — es decir, ya se sabía que en el peor caso podía tardar mucho. Eso no es normal para algo que se supone casi en tiempo real, y es otra señal de que el pipeline actual, tal como está, no estaba pensado para ser rápido.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cómo comprobarlo (antes de tocar nada)</h2>
+    <p>Estos comandos se ejecutan por SSH directamente en el servidor. No cambian nada, solo diagnostican.</p>
+
+    <h3>1 · ¿Está usando la GPU de verdad?</h3>
+    <pre><span class="c"># Si esto da "False", el modelo está corriendo en CPU</span>
+docker exec recupera_voz_lipreading python3 -c <span class="good">"import torch; print(torch.cuda.is_available())"</span>
+
+<span class="c"># Comprueba que la GPU es visible dentro del contenedor</span>
+docker exec recupera_voz_lipreading nvidia-smi
+
+<span class="c"># Comprueba qué build de torch quedó instalada realmente</span>
+docker exec recupera_voz_lipreading pip show torch <span class="c">| grep Version</span>
+<span class="c"># Debería terminar en "+cu121" (GPU). Si termina en "+cpu", ahí está el bug.</span></pre>
+
+    <h3>2 · ¿Cuánto es red y cuánto es modelo?</h3>
+    <pre><span class="c"># Desde dentro del propio servidor (por SSH), sin pasar por ngrok:</span>
+time curl -X POST http://localhost:8881/lipreading/recognize -F <span class="good">"video=@prueba.mp4"</span>
+
+<span class="c"># El mismo request, pero por la URL pública de ngrok:</span>
+time curl -X POST https://mirian-eriophyllous-serriedly.ngrok-free.dev/lipreading/recognize -F <span class="good">"video=@prueba.mp4"</span>
+
+<span class="c"># Si la segunda tarda mucho más que la primera, buena parte del problema es el túnel, no el modelo.</span></pre>
+  </section>
+
+  <section>
+    <h2>Plan de acción</h2>
+
+    <div class="fase">
+      <div class="fase-head">
+        <div class="n">1</div>
+        <h3>Confirmar la causa</h3>
+        <span class="plazo horas">Horas</span>
+      </div>
+      <ul class="checklist">
+        <li><input type="checkbox"><span>Ejecutar los comandos de diagnóstico de la sección anterior sobre <code>recupera_voz_lipreading</code></span></li>
+        <li><input type="checkbox"><span>Revisar el <code>Dockerfile</code> y <code>requirements.txt</code> del proyecto de lipreading (<code>backendlip</code>) buscando el mismo patrón de doble instalación de torch que ya vimos en <code>api</code></span></li>
+        <li><input type="checkbox"><span>Medir por separado el tiempo de red (ngrok) y el tiempo de inferencia (local)</span></li>
+      </ul>
+    </div>
+
+    <div class="fase">
+      <div class="fase-head">
+        <div class="n">2</div>
+        <h3>Arreglar lo confirmado</h3>
+        <span class="plazo horas">Horas</span>
+      </div>
+      <ul class="checklist">
+        <li><input type="checkbox"><span>Si hay doble instalación de torch: quitar la línea que reinstala la versión CPU en <code>requirements.txt</code>, o fijar ahí también el índice CUDA</span></li>
+        <li><input type="checkbox"><span>Reconstruir la imagen (<code>docker compose up --build -d</code>) y repetir el diagnóstico para confirmar que ahora <code>cuda.is_available()</code> da <code>True</code></span></li>
+        <li><input type="checkbox"><span>Volver a medir la latencia end-to-end desde la app</span></li>
+      </ul>
+    </div>
+
+    <div class="fase">
+      <div class="fase-head">
+        <div class="n">3</div>
+        <h3>Quitar el cuello de botella de red</h3>
+        <span class="plazo dias">Días</span>
+      </div>
+      <ul class="checklist">
+        <li><input type="checkbox"><span>Sustituir el túnel ngrok gratuito por un dominio propio con reverse proxy (nginx o Caddy) y TLS</span></li>
+        <li><input type="checkbox"><span>Restringir por firewall el acceso directo a los puertos 8880/8881/8001 (pendiente de seguridad ya anotado aparte)</span></li>
+      </ul>
+    </div>
+
+    <div class="fase">
+      <div class="fase-head">
+        <div class="n">4</div>
+        <h3>Solo si tras esto sigue siendo lento</h3>
+        <span class="plazo futuro">Más adelante</span>
+      </div>
+      <p style="font-size:13.5px; margin-bottom:8px;">Si después de arreglar GPU y red la latencia sigue sin ser aceptable, entonces sí sería el momento de valorar en serio la vía de un modelo propio, ligero, ejecutado en el propio dispositivo con vocabulario acotado a las fichas — la línea de trabajo que ya planteamos sobre dataset en español y transfer learning. Pero es una vía de meses, así que no tiene sentido abrirla antes de descartar arreglos de horas.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="aviso warn">
+      <span class="icon">⚠️</span>
+      <div>
+        <strong>Qué no hacer todavía</strong>
+        <p>No descartar CMU-MOSEAS como modelo. Es la opción correcta para el caso de uso real (transcripción abierta en español, no un listado cerrado de 500 palabras en inglés) y su precisión ya está validada en investigación publicada con cifras muy similares a las que tenemos en producción. Cambiar de modelo sin antes confirmar la causa de la latencia sería resolver el síntoma equivocado.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Informe preparado a partir de la revisión del backend (<code>REVISION.md</code>, <code>DESPLIEGUE.md</code>) y de las pruebas de latencia reportadas sobre el servicio de lectura de labios.
+  </footer>
+
+</div>
+</body>
+</html>

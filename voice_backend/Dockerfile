@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 FROM nvidia/cuda:12.2.0-cudnn8-runtime-ubuntu22.04
+=======
+FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
+>>>>>>> c30edd2a32a96c03b24de99292da3ead58897669
 
 ENV DEBIAN_FRONTEND=noninteractive
 

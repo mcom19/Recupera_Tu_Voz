@@ -5,6 +5,7 @@ import '../../models/app_user.dart';
 import '../../services/api_service.dart';
 import '../../services/roles_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/main_app_bar.dart';
 
 class LogopedaResumenScreen extends StatefulWidget {
   final AppUser user;
@@ -90,9 +91,10 @@ class _LogopedaResumenScreenState extends State<LogopedaResumenScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(
-        title: const Text('Resumen'),
-        actions: [
+      appBar: MainAppBar(
+        title: 'Resumen',
+        showVozAction: false,
+        extraActions: [
           IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _load),
         ],
       ),
