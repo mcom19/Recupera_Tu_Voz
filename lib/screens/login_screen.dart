@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
+import '../widgets/google_web_button.dart';
 import '../services/api_service.dart';
 
 // ── Google Sign-In global ──────────────────────────────
@@ -35,15 +37,38 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _loading = false;
   String? _error;
+  StreamSubscription<GoogleSignInAccount?>? _googleSub;
 
   @override
   void initState() {
     super.initState();
+    // En web el login llega por este stream (botón oficial de Google).
+    if (kIsWeb) {
+      _googleSub = _googleAuth.onCurrentUserChanged.listen(_onWebGoogleUser);
+    }
     _trySilentLogin();
+  }
+
+  Future<void> _onWebGoogleUser(GoogleSignInAccount? account) async {
+    if (account == null || !mounted) return;
+    setState(() { _loading = true; _error = null; });
+    try {
+      final idToken = (await account.authentication).idToken;
+      if (idToken == null) {
+        throw ApiException('No se pudo obtener el token de Google');
+      }
+      await widget.onGoogleLogin(idToken);
+    } catch (e) {
+      print('GOOGLE LOGIN ERROR (web): $e');
+      if (mounted) setState(() => _error = _parseError(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
   void dispose() {
+    _googleSub?.cancel();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
@@ -87,6 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final account = await _googleAuth.signInSilently();
       if (account == null) return;
+      if (kIsWeb) return; // en web lo gestiona _onWebGoogleUser
 
       final auth = await account.authentication;
       final idToken = auth.idToken;
@@ -203,7 +229,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
 
                 // ── Google Button ───────────────────────────────
-                _GoogleButton(loading: _loading, onTap: _handleGoogleSignIn),
+                // En web: botón oficial de Google (devuelve idToken). En móvil: el propio.
+                kIsWeb
+                    ? Center(child: buildGoogleWebButton())
+                    : _GoogleButton(loading: _loading, onTap: _handleGoogleSignIn),
 
                 const SizedBox(height: 18),
                 Center(
