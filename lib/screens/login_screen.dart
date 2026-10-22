@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../theme/app_theme.dart';
@@ -7,7 +8,9 @@ import '../services/api_service.dart';
 // ── Google Sign-In global ──────────────────────────────
 final GoogleSignIn _googleAuth = GoogleSignIn(
   scopes: ['email', 'profile'],
-  serverClientId: '932911621543-3mndq09ncvdge2q541tsvmidovp01mei.apps.googleusercontent.com',
+  // En web el plugin usa clientId (o la meta de web/index.html) y no admite serverClientId.
+  clientId: kIsWeb ? '809723399127-kr6oujlaf79p49fol55hfrjjkj01uleu.apps.googleusercontent.com' : null,
+  serverClientId: kIsWeb ? null : '809723399127-kr6oujlaf79p49fol55hfrjjkj01uleu.apps.googleusercontent.com',
 );
 
 class LoginScreen extends StatefulWidget {

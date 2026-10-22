@@ -4,4 +4,7 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Solo depuración: permite http:// para probar con el servicio de
+         lectura labial del PC por la wifi (la build de release exige HTTPS). -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>

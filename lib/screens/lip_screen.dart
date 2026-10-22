@@ -12,7 +12,9 @@ import 'dart:convert';
 import '../models/app_user.dart';
 import '../theme/app_theme.dart';
 import '../widgets/main_app_bar.dart';
-import '../services/api_service.dart'; // para kServerUrl
+import '../services/api_service.dart'; // kServerUrl, kLipreadingLocal
+import '../services/tts_service.dart';
+import '../models/app_settings.dart';
 
 class LipScreen extends StatefulWidget {
   final AppUser? user;
@@ -40,6 +42,8 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
 
   // ── Audio ──────────────────────────────────────────────────────
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final TtsService _tts = TtsService(); // modo prueba local: voz clonada como en Frases
+  String? _infoPrueba; // tiempos del servicio local
   bool _playing = false;
 
   // ── Estado UI ──────────────────────────────────────────────────
@@ -54,6 +58,7 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    _tts.init();
     WidgetsBinding.instance.addObserver(this);
     _initCamera();
     _audioPlayer.playerStateStream.listen((state) {
@@ -68,6 +73,7 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _camCtrl?.dispose();
     _audioPlayer.dispose();
+    _tts.dispose();
     super.dispose();
   }
 
@@ -188,6 +194,11 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
       return;
     }
 
+    if (kLipreadingLocal) {
+      await _probarServicioLocal(videoFile);
+      return;
+    }
+
     try {
       final token = widget.user?.token ?? '';
       final uri = Uri.parse('$kServerUrl/lipreading/speak');
@@ -240,6 +251,73 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
     } finally {
       // En web `videoFile.path` es una blob URL, no un fichero real:
       // no hay nada que borrar del disco ahí.
+      if (!kIsWeb) {
+        try { await File(videoFile.path).delete(); } catch (_) {}
+      }
+    }
+  }
+
+  // ── PRUEBA: servicio local lipreading_final ─────────────────────
+  // Vídeo -> kLipreadingLocalUrl/infer -> texto -> voz clonada (TtsService).
+  Future<void> _probarServicioLocal(XFile videoFile) async {
+    try {
+      final videoBytes = await videoFile.readAsBytes();
+      final request = http.MultipartRequest('POST', Uri.parse('$kLipreadingLocalUrl/infer'))
+        ..files.add(http.MultipartFile.fromBytes(
+          'video',
+          videoBytes,
+          filename: kIsWeb ? 'video.webm' : 'video.mp4',
+        ));
+      final streamed = await request.send().timeout(const Duration(seconds: 120));
+      final body = await streamed.stream.bytesToString();
+
+      if (streamed.statusCode != 200) {
+        String detail = 'Error del servicio local (${streamed.statusCode})';
+        try { detail = jsonDecode(body)['detail'] ?? detail; } catch (_) {}
+        if (mounted) setState(() { _state = _LipState.error; _errorMsg = detail; });
+        return;
+      }
+
+      final j = jsonDecode(body) as Map<String, dynamic>;
+      final texto = (j['text'] as String? ?? '').trim();
+      final t = (j['tiempos'] as Map?) ?? {};
+      _infoPrueba = 'Leído en ${((j['ms'] as num? ?? 0) / 1000).toStringAsFixed(1)} s · '
+          'cara ${t['cara'] ?? '-'} s · modelo ${t['modelo'] ?? '-'} s · '
+          'movimiento ${j['movimiento']}';
+
+      if (texto.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _state = _LipState.error;
+            _errorMsg = j['motivo'] == 'muy_corto'
+                ? 'La grabación es demasiado corta.'
+                : 'No he visto movimiento de labios. Vuelve a intentarlo.';
+          });
+        }
+        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _state = _LipState.result;
+          _resultText = texto;
+          _audioBytes = null;
+        });
+      }
+      await _tts.speak(
+        text: texto,
+        settings: const AppSettings(),
+        userToken: widget.user?.token,
+        hasVoice: widget.user?.hasVoice ?? false,
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = _LipState.error;
+          _errorMsg = 'No se pudo conectar con $kLipreadingLocalUrl ($e)';
+        });
+      }
+    } finally {
       if (!kIsWeb) {
         try { await File(videoFile.path).delete(); } catch (_) {}
       }
@@ -394,6 +472,21 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
                   const SizedBox(height: 6),
                   Text(_resultText!,
                       style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w500)),
+                  if (kLipreadingLocal) ...[
+                    const SizedBox(height: 8),
+                    if (_infoPrueba != null)
+                      Text(_infoPrueba!, style: TextStyle(color: c.textDim, fontSize: 11)),
+                    TextButton.icon(
+                      onPressed: () => _tts.speak(
+                        text: _resultText!,
+                        settings: const AppSettings(),
+                        userToken: widget.user?.token,
+                        hasVoice: widget.user?.hasVoice ?? false,
+                      ),
+                      icon: Icon(Icons.volume_up_rounded, color: c.accent, size: 18),
+                      label: Text('Decir otra vez', style: TextStyle(color: c.accent)),
+                    ),
+                  ],
                 ],
               ),
             ),

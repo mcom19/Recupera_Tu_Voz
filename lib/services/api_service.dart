@@ -16,14 +16,30 @@ import '../models/app_user.dart';
 // local mientras tanto, comenta la línea de abajo y descomenta esta
 // (levanta antes /lipreading_backend con Docker):
 // const String kServerUrl = 'http://localhost:8010';
-const String kServerUrl = 'https://mirian-eriophyllous-serriedly.ngrok-free.dev';
+//const String kServerUrl = 'https://mirian-eriophyllous-serriedly.ngrok-free.dev';
+const String kServerUrl = String.fromEnvironment(
+  'SERVER_URL',
+  defaultValue: 'https://proyectovoz.elcampico.org',
+);
+// ── PRUEBA: lectura labial con el servicio local (lipreading_final) ──
+// true  -> la pestaña "Labios" manda el vídeo a kLipreadingLocalUrl/infer,
+//          recibe el texto y lo dice con la voz clonada (TtsService, igual
+//          que la pestaña Frases).
+// false -> comportamiento normal: kServerUrl/lipreading/speak (producción).
+//  · Chrome en el mismo PC:        http://localhost:8002
+//  · Emulador Android:             http://10.0.2.2:8002
+//  · Móvil real en la misma wifi:  http://<IPv4 del PC>:8002
+const bool kLipreadingLocal = true;
+const String kLipreadingLocalUrl = 'http://localhost:8002';
 
 /// Cabecera necesaria porque el backend está detrás de un túnel ngrok
 /// gratuito: sin ella, ngrok devuelve una página HTML de aviso en vez de
 /// dejar pasar la petición a la API (falla especialmente en Flutter Web,
 /// donde las peticiones llevan cabeceras de navegador).
 /// Quitar/vaciar esto cuando se sirva desde un dominio propio.
-const Map<String, String> kNgrokHeaders = {'ngrok-skip-browser-warning': 'true'};
+const Map<String, String> kNgrokHeaders = {
+  'ngrok-skip-browser-warning': 'true'
+};
 
 class ApiException implements Exception {
   final String message;
@@ -38,7 +54,7 @@ class ApiException implements Exception {
 // ─────────────────────────────────────────────────────────────────
 class AuthService {
   static const _keyToken = 'auth_token';
-  static const _keyUser  = 'saved_user';
+  static const _keyUser = 'saved_user';
 
   static const _secure = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -50,15 +66,17 @@ class AuthService {
     required String password,
     required String name,
   }) async {
-    final res = await http.post(
-      Uri.parse('$kServerUrl/auth/register'),
-      headers: {'Content-Type': 'application/json', ...kNgrokHeaders},
-      body: jsonEncode({
-        'email': email.trim(),
-        'password': password,
-        'name': name.trim(),
-      }),
-    ).timeout(const Duration(seconds: 15));
+    final res = await http
+        .post(
+          Uri.parse('$kServerUrl/auth/register'),
+          headers: {'Content-Type': 'application/json', ...kNgrokHeaders},
+          body: jsonEncode({
+            'email': email.trim(),
+            'password': password,
+            'name': name.trim(),
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
 
     return _parseAuth(res);
   }
@@ -68,22 +86,29 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final res = await http.post(
-      Uri.parse('$kServerUrl/auth/login'),
-      headers: {'Content-Type': 'application/x-www-form-urlencoded', ...kNgrokHeaders},
-      body: 'username=${Uri.encodeComponent(email.trim())}'
-          '&password=${Uri.encodeComponent(password)}',
-    ).timeout(const Duration(seconds: 15));
+    final res = await http
+        .post(
+          Uri.parse('$kServerUrl/auth/login'),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            ...kNgrokHeaders
+          },
+          body: 'username=${Uri.encodeComponent(email.trim())}'
+              '&password=${Uri.encodeComponent(password)}',
+        )
+        .timeout(const Duration(seconds: 15));
     return _parseAuth(res);
   }
 
   // ── LOGIN GOOGLE ───────────────────────────────────────────────
   Future<AppUser> loginWithGoogle(String idToken) async {
-    final res = await http.post(
-      Uri.parse('$kServerUrl/auth/google'),
-      headers: {'Content-Type': 'application/json', ...kNgrokHeaders},
-      body: jsonEncode({'id_token': idToken}),
-    ).timeout(const Duration(seconds: 15));
+    final res = await http
+        .post(
+          Uri.parse('$kServerUrl/auth/google'),
+          headers: {'Content-Type': 'application/json', ...kNgrokHeaders},
+          body: jsonEncode({'id_token': idToken}),
+        )
+        .timeout(const Duration(seconds: 15));
 
     return _parseAuth(res);
   }
@@ -92,6 +117,7 @@ class AuthService {
   /// Guardamos token en secure storage + resto sin token en prefs
   Future<void> saveUser(AppUser user) async {
     await _secure.write(key: _keyToken, value: user.token);
+
     ///sin secure ya que no importa el resto de la info
     final p = await SharedPreferences.getInstance();
     await p.setString(_keyUser, jsonEncode(user.toJsonWithoutToken()));
@@ -142,10 +168,10 @@ class AuthService {
 // ─────────────────────────────────────────────────────────────────
 class VoiceApiService {
   Map<String, String> _headers(String token) => {
-    'Authorization': 'Bearer $token',
-    'Content-Type': 'application/json',
-    ...kNgrokHeaders,
-  };
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        ...kNgrokHeaders,
+      };
 
   Future<Map<String, dynamic>> checkVoiceStatusFull(String token) async {
     try {
@@ -213,7 +239,8 @@ class VoiceApiService {
           http.MultipartFile.fromBytes('file', f.bytes, filename: f.filename),
         );
 
-      final streamed = await request.send().timeout(const Duration(seconds: 60));
+      final streamed =
+          await request.send().timeout(const Duration(seconds: 60));
       final res = await http.Response.fromStream(streamed);
 
       if (res.statusCode != 200) {
@@ -234,10 +261,10 @@ class VoiceApiService {
   }) async {
     final res = await http
         .post(
-      Uri.parse('$kServerUrl/voice/tts'),
-      headers: _headers(token),
-      body: jsonEncode({'text': text, 'speed': speed}),
-    )
+          Uri.parse('$kServerUrl/voice/tts'),
+          headers: _headers(token),
+          body: jsonEncode({'text': text, 'speed': speed}),
+        )
         .timeout(const Duration(seconds: 90));
 
     if (res.statusCode == 200) return res.bodyBytes;
@@ -260,9 +287,9 @@ class VoiceApiService {
 // FRASES API SERVICE
 // ─────────────────────────────────────────────────────────────────
 class FrasesApiService {
-  static const _cacheKey     = 'frases_default_cache';
+  static const _cacheKey = 'frases_default_cache';
   static const _cacheTimeKey = 'frases_default_cache_time';
-  static const _ttlHours     = 24; // caché válida 24 horas
+  static const _ttlHours = 24; // caché válida 24 horas
   static const _bundledAsset = 'assets/data/frases_base.json';
 
   /// Si `fetchDefault()` tuvo que recurrir al catálogo básico embebido
@@ -352,9 +379,9 @@ class VideosApiService {
   const VideosApiService(this.token);
 
   Map<String, String> get _headers => {
-    'Authorization': 'Bearer $token',
-    ...kNgrokHeaders,
-  };
+        'Authorization': 'Bearer $token',
+        ...kNgrokHeaders,
+      };
 
   Future<Map<String, dynamic>> uploadVideo({
     required Uint8List bytes,
@@ -367,18 +394,20 @@ class VideosApiService {
   }) async {
     final uri = Uri.parse(
       '$kServerUrl/videos/upload'
-          '?title=${Uri.encodeComponent(title)}'
-          '&content_type=$contentType'
-          '&visibility=$visibility'
-          '${level != null ? "&level=$level" : ""}'
-          '${description != null ? "&description=${Uri.encodeComponent(description)}" : ""}',
+      '?title=${Uri.encodeComponent(title)}'
+      '&content_type=$contentType'
+      '&visibility=$visibility'
+      '${level != null ? "&level=$level" : ""}'
+      '${description != null ? "&description=${Uri.encodeComponent(description)}" : ""}',
     );
 
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
       ..headers.addAll(kNgrokHeaders)
       ..files.add(http.MultipartFile.fromBytes(
-        'file', bytes, filename: filename,
+        'file',
+        bytes,
+        filename: filename,
       ));
 
     final streamed = await request.send().timeout(const Duration(seconds: 120));
@@ -394,13 +423,15 @@ class VideosApiService {
     final uri = Uri.parse(
       '$kServerUrl/videos${level != null ? "?level=$level" : ""}',
     );
-    final res = await http
-        .get(uri, headers: {..._headers, 'Content-Type': 'application/json'})
-        .timeout(const Duration(seconds: 10));
+    final res = await http.get(uri, headers: {
+      ..._headers,
+      'Content-Type': 'application/json'
+    }).timeout(const Duration(seconds: 10));
     if (res.statusCode != 200) throw ApiException(_extractDetail(res));
     return (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
   }
 }
+
 // ─────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────
