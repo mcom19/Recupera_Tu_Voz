@@ -48,6 +48,15 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       builder: (_) => PatientCodeScreen(
         user: widget.user,
         onLinked: widget.onRoleSet,
+        // "Más tarde": entra como paciente sin logopeda; podrá vincularse desde el perfil.
+        onSkip: () {
+          Navigator.of(context).pop();
+          widget.onRoleSet(widget.user.copyWith(
+            role: 'patient',
+            roleSet: true,
+            logopedaSkipped: true,
+          ));
+        },
       ),
     ));
   }

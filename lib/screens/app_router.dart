@@ -54,9 +54,13 @@ class _AppRouterState extends State<AppRouter> {
       final roleInfo = await RolesService(_user.token).getRoleInfo();
       if (!mounted) return;
       setState(() {
+        // Si el paciente eligió "Más tarde", el servidor aún no tiene rol fijado:
+        // se respeta la elección guardada en el dispositivo.
+        final serverRoleSet = roleInfo['role_set'] as bool? ?? false;
+        final skippedLocal  = !serverRoleSet && _user.logopedaSkipped;
         _user = _user.copyWith(
-          role:         roleInfo['role']         as String?,
-          roleSet:      roleInfo['role_set']     as bool?,
+          role:         skippedLocal ? 'patient' : roleInfo['role'] as String?,
+          roleSet:      serverRoleSet || skippedLocal,
           logopedaId:   roleInfo['logopeda_id']  as String?,
           logopedaName: roleInfo['logopeda_name'] as String?,
         );
