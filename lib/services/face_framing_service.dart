@@ -21,6 +21,7 @@
 // para dibujar el overlay no sea perfecto en todos los dispositivos.
 
 import 'dart:io';
+import 'dart:math' show Point;
 import 'dart:ui';
 
 import 'package:camera/camera.dart';
