@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recupera tu voz — Necesidades pendientes</title>
+<style>
+  :root {
+    --bg: #0f1420;
+    --surface: #171d2b;
+    --surface-2: #1e2534;
+    --border: #2a3244;
+    --text: #eef1f6;
+    --text-mid: #b5bcc9;
+    --text-dim: #7c8494;
+    --accent: #378ADD;
+    --teal: #1D9E75;
+    --gold: #BA7517;
+    --coral: #D85A30;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 20px 80px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  header { margin-bottom: 34px; }
+  h1 { font-size: 24px; font-weight: 700; margin: 0 0 6px; }
+  .meta { color: var(--text-dim); font-size: 13px; }
+  .intro {
+    margin-top: 18px;
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-mid);
+    font-size: 14px;
+  }
+  .legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .dot.pac { background: var(--accent); }
+  .dot.log { background: var(--teal); }
+  .dot.amb { background: var(--gold); }
+
+  section.tier { margin-bottom: 36px; }
+  .tier-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .tier-head h2 { font-size: 16px; font-weight: 700; margin: 0; }
+  .tier-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    text-transform: uppercase;
+  }
+  .tier-badge.alta { background: rgba(216,90,48,0.15); color: #f0997b; }
+  .tier-badge.media { background: rgba(186,117,23,0.18); color: #efb85a; }
+  .tier-badge.baja { background: rgba(55,138,221,0.15); color: #85b7eb; }
+  .tier-desc { color: var(--text-dim); font-size: 13px; margin: 6px 0 16px; }
+
+  .item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+  }
+  .item input[type="checkbox"] {
+    width: 19px;
+    height: 19px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    accent-color: var(--teal);
+    cursor: pointer;
+  }
+  .item-body { flex: 1; min-width: 0; }
+  .item-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .item-num {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 700;
+    min-width: 18px;
+  }
+  .item-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .tag {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.3px;
+  }
+  .tag.pac { background: rgba(55,138,221,0.15); color: #85b7eb; }
+  .tag.log { background: rgba(29,158,117,0.15); color: #5dcaa5; }
+  .tag.amb { background: rgba(186,117,23,0.18); color: #efb85a; }
+  .item-desc { font-size: 13.5px; color: var(--text-mid); }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  @media print {
+    body { background: #fff; color: #111; padding: 20px; }
+    .item, .intro { background: #fafafa; border-color: #ddd; }
+    .item-title, h1 { color: #111; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Recupera tu voz — Necesidades pendientes</h1>
+    <div class="meta">Informe de revisión funcional · 4 de agosto de 2026</div>
+    <div class="intro">
+      Checklist de necesidades identificadas para el paciente laringectomizado y para el logopeda,
+      a partir del estado actual de la app (clonación de voz, Frases, fichas de trabajo, Labios) y
+      del objetivo final del proyecto: conversación en tiempo real mediante lipreading y voz clonada.
+      Ordenado de mayor a menor prioridad según impacto en el uso diario y en la seguridad clínica.
+    </div>
+    <div class="legend">
+      <span><span class="dot pac"></span>Paciente</span>
+      <span><span class="dot log"></span>Logopeda</span>
+      <span><span class="dot amb"></span>Ambos</span>
+    </div>
+  </header>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Prioridad alta</h2>
+      <span class="tier-badge alta">Bloquean uso seguro o diario</span>
+    </div>
+    <p class="tier-desc">Afectan directamente a la seguridad del paciente o a la utilidad clínica básica de la app tal y como está hoy.</p>
+
+    <div class="item">
+      <input type="checkbox" id="i1">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">1</span>
+          <span class="item-title">Acceso a frases urgentes en un solo toque</span>
+          <span class="tag pac">Paciente</span>
+        </div>
+        <div class="item-desc">La categoría "Urgente" existe en Frases, pero requiere navegar varios pasos. En una urgencia real (ahogo, dolor) hace falta un acceso directo desde la pantalla de bloqueo o un botón fijo en Inicio.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i2">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">2</span>
+          <span class="item-title">Progresión de ejercicios más allá de la palabra suelta</span>
+          <span class="tag log">Logopeda</span>
+        </div>
+        <div class="item-desc">Las fichas solo trabajan a nivel de palabra. Falta la progresión hacia frases, lectura y habla espontánea — el puente natural hacia el objetivo de conversación en tiempo real.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i3">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">3</span>
+          <span class="item-title">Diferenciar el contenido según el tipo de voz</span>
+          <span class="tag log">Logopeda</span>
+        </div>
+        <div class="item-desc">Voz esofágica, electrolaringe y prótesis traqueoesofágica (TEP) tienen retos articulatorios distintos. Hoy la ficha es genérica para todos los pacientes.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i4">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">4</span>
+          <span class="item-title">Alternativa a escribir letra a letra</span>
+          <span class="tag pac">Paciente</span>
+        </div>
+        <div class="item-desc">Sin predicción de palabras ni botón de "repetir lo último dicho". Escribir cansa, especialmente con movilidad reducida en cuello/hombro tras la cirugía o radioterapia.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i5">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">5</span>
+          <span class="item-title">Ficha clínica inicial completa</span>
+          <span class="tag log">Logopeda</span>
+        </div>
+        <div class="item-desc">Falta registrar tipo de laringectomía, fecha de cirugía y el tipo de voz TEP (no solo esofágica/electrolaringe). Sin esto no se puede personalizar el plan de rehabilitación.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Prioridad media</h2>
+      <span class="tier-badge media">Mejoran seguimiento y experiencia</span>
+    </div>
+    <p class="tier-desc">No bloquean el uso diario, pero limitan la calidad del seguimiento clínico y la experiencia del paciente.</p>
+
+    <div class="item">
+      <input type="checkbox" id="i6">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">6</span>
+          <span class="item-title">Evolución individual por paciente</span>
+          <span class="tag log">Logopeda</span>
+        </div>
+        <div class="item-desc">El resumen solo da medias del conjunto de pacientes. Falta una gráfica de evolución por paciente a lo largo del tiempo para decidir si subir de nivel o repetir ficha.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i7">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">7</span>
+          <span class="item-title">Mensajería logopeda-paciente</span>
+          <span class="tag amb">Ambos</span>
+        </div>
+        <div class="item-desc">No hay forma de dejar feedback puntual o resolver una duda entre sesiones presenciales. Hoy solo existen fichas y estadísticas.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i8">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">8</span>
+          <span class="item-title">Selector de "Emoción" funcional con la voz clonada</span>
+          <span class="tag pac">Paciente</span>
+        </div>
+        <div class="item-desc">El selector de emoción en Texto solo afecta al TTS del sistema, no a la voz clonada. El paciente no puede transmitir matices con su propia voz.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i9">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">9</span>
+          <span class="item-title">Modo offline más robusto para la voz clonada</span>
+          <span class="tag pac">Paciente</span>
+        </div>
+        <div class="item-desc">Sin conexión, la síntesis con la voz propia solo funciona si la frase ya está en caché; si no, cae al TTS genérico del sistema justo cuando más frustra.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i10">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">10</span>
+          <span class="item-title">Contenido educativo dentro de la app</span>
+          <span class="tag amb">Ambos</span>
+        </div>
+        <div class="item-desc">No hay vídeos ni guías sobre cuidado del estoma o uso de dispositivos, algo crítico porque la formación inicial se da en una sola sesión preoperatoria.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i11">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">11</span>
+          <span class="item-title">Acceso para un familiar o cuidador</span>
+          <span class="tag pac">Paciente</span>
+        </div>
+        <div class="item-desc">No hay forma de que un familiar ayude a configurar la app cuando el paciente está recién operado o cansado.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Prioridad baja / futuro</h2>
+      <span class="tier-badge baja">Deseables, mayor coste o dependen de terceros</span>
+    </div>
+    <p class="tier-desc">Aportan valor pero implican más complejidad técnica, dependencias externas o no son urgentes en esta fase.</p>
+
+    <div class="item">
+      <input type="checkbox" id="i12">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">12</span>
+          <span class="item-title">Voz clonada en llamadas telefónicas reales</span>
+          <span class="tag pac">Paciente</span>
+        </div>
+        <div class="item-desc">Hoy la voz clonada solo funciona dentro de la app. Integrarla en una llamada real requiere trabajo a nivel de sistema operativo/telefonía.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i13">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">13</span>
+          <span class="item-title">Alertas clínicas automáticas</span>
+          <span class="tag log">Logopeda</span>
+        </div>
+        <div class="item-desc">Avisar al logopeda cuando un paciente lleva días sin practicar o su puntuación cae de forma sostenida, sin tener que revisarlo manualmente.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i14">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">14</span>
+          <span class="item-title">Cuestionarios estandarizados de calidad de vida</span>
+          <span class="tag log">Logopeda</span>
+        </div>
+        <div class="item-desc">Integrar instrumentos validados (tipo VRQOL) para medir resultado clínico a lo largo de la terapia, útil también para memorias de proyecto.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i15">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">15</span>
+          <span class="item-title">Ocultar el texto mientras se escribe</span>
+          <span class="tag pac">Paciente</span>
+        </div>
+        <div class="item-desc">Al no poder hablar para "distraer" mientras se teclea algo delicado, no hay forma de ocultar el texto de la pantalla frente a terceros.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i16">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">16</span>
+          <span class="item-title">Plantillas de frases por escenario</span>
+          <span class="tag pac">Paciente</span>
+        </div>
+        <div class="item-desc">Plantillas preparadas para contextos típicos (médico, farmacia, restaurante, trabajo) para no tener que escribir cada frase desde cero.</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="i17">
+      <div class="item-body">
+        <div class="item-title-row">
+          <span class="item-num">17</span>
+          <span class="item-title">Métricas de calidad vocal más allá del reconocimiento ASR</span>
+          <span class="tag log">Logopeda</span>
+        </div>
+        <div class="item-desc">El score actual (Whisper) mide inteligibilidad, no calidad vocal clínica (ronquera, tensión, soplo, prosodia). Requiere análisis acústico adicional.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Generado a partir de la revisión funcional de la app "Recupera tu voz" (fase 1: clonación de voz y rehabilitación).
+    Las casillas son interactivas dentro de este documento, pero no se guardan al recargar la página.
+  </footer>
+
+</div>
+</body>
+</html>

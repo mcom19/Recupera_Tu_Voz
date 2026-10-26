@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/app_user.dart';
 import '../../services/roles_service.dart';
+import '../../theme/app_theme.dart';
 
 class PatientCodeScreen extends StatefulWidget {
   final AppUser user;
@@ -69,13 +70,15 @@ class _PatientCodeScreenState extends State<PatientCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AdaptiveColors.of(context);
     return Scaffold(
+      backgroundColor: c.bg,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Vincular con logopeda'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black87,
+        foregroundColor: c.textPrimary,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -86,20 +89,20 @@ class _PatientCodeScreenState extends State<PatientCodeScreen> {
               Container(
                 width: 56, height: 56,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE6F1FB),
+                  color: c.accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.link_rounded, color: Color(0xFF185FA5), size: 28),
+                child: Icon(Icons.link_rounded, color: c.accent, size: 28),
               ),
               const SizedBox(height: 20),
               Text('Introduce tu código',
-                  style: Theme.of(context).textTheme.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w600)),
+                  style: TextStyle(
+                      color: c.textPrimary, fontSize: 22, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Text(
                 'Tu logopeda te ha proporcionado un código de 8 caracteres '
                     'con el formato RTV-XXXX. Introdúcelo aquí para vincularte.',
-                style: TextStyle(color: Colors.grey.shade600, height: 1.5),
+                style: TextStyle(color: c.textMid, height: 1.5),
               ),
               const SizedBox(height: 32),
 
@@ -108,22 +111,27 @@ class _PatientCodeScreenState extends State<PatientCodeScreen> {
                 keyboardType: TextInputType.text,
                 textCapitalization: TextCapitalization.characters,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: 4),
+                style: TextStyle(
+                    color: c.textPrimary, fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: 4),
                 maxLength: 8,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\-]')),
                 ],
                 decoration: InputDecoration(
                   hintText: 'RTV-XXXX',
-                  hintStyle: TextStyle(color: Colors.grey.shade300, letterSpacing: 4, fontSize: 28),
+                  hintStyle: TextStyle(color: c.textDim, letterSpacing: 4, fontSize: 28),
                   counterText: '',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: _error != null ? Colors.red : Colors.grey.shade300),
+                    borderSide: BorderSide(color: _error != null ? c.warn : c.border),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: _error != null ? Colors.red : Colors.grey.shade300),
+                    borderSide: BorderSide(color: _error != null ? c.warn : c.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: _error != null ? c.warn : c.accent, width: 1.5),
                   ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 20),
                 ),
@@ -134,10 +142,10 @@ class _PatientCodeScreenState extends State<PatientCodeScreen> {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                    Icon(Icons.error_outline, color: c.warn, size: 16),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                      child: Text(_error!, style: TextStyle(color: c.warn, fontSize: 13)),
                     ),
                   ],
                 ),
@@ -150,14 +158,15 @@ class _PatientCodeScreenState extends State<PatientCodeScreen> {
                 child: FilledButton(
                   onPressed: _loading ? null : _vincular,
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF185FA5),
+                    backgroundColor: c.accent,
+                    foregroundColor: c.bg,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   child: _loading
-                      ? const SizedBox(
+                      ? SizedBox(
                     height: 20, width: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(color: c.bg, strokeWidth: 2),
                   )
                       : const Text('Vincularme', style: TextStyle(fontSize: 16)),
                 ),
@@ -166,7 +175,7 @@ class _PatientCodeScreenState extends State<PatientCodeScreen> {
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.of(context).maybePop(),
-                  child: const Text('Volver a elegir perfil'),
+                  child: Text('Volver a elegir perfil', style: TextStyle(color: c.accent)),
                 ),
               ),
               if (widget.onSkip != null) ...[
@@ -176,7 +185,7 @@ class _PatientCodeScreenState extends State<PatientCodeScreen> {
                     onPressed: _loading ? null : widget.onSkip,
                     child: Text(
                       'Más tarde',
-                      style: TextStyle(color: Colors.grey.shade600),
+                      style: TextStyle(color: c.textMid),
                     ),
                   ),
                 ),
@@ -186,7 +195,7 @@ class _PatientCodeScreenState extends State<PatientCodeScreen> {
                     child: Text(
                       'Podrás vincularte con tu logopeda cuando quieras desde tu perfil.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                      style: TextStyle(color: c.textDim, fontSize: 12),
                     ),
                   ),
                 ),

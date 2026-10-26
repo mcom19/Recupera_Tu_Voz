@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show TextInput;
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -32,6 +33,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() { _loading = true; _error = null; });
     try {
       await widget.onRegister(_nameCtrl.text.trim(), _emailCtrl.text.trim(), _passCtrl.text);
+      // Cuenta creada: avisamos al gestor de contraseñas del sistema para
+      // que pueda ofrecer guardar el email/contraseña recién creados.
+      TextInput.finishAutofillContext();
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {
@@ -64,13 +68,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Center(child: Text('Es gratis y solo toma un momento',
                     style: TextStyle(color: c.textDim, fontSize: 14))),
                 const SizedBox(height: 40),
-                AuthField(ctrl: _nameCtrl, label: 'Nombre', hint: 'Tu nombre'),
-                const SizedBox(height: 14),
-                AuthField(ctrl: _emailCtrl, label: 'Email',
-                    hint: 'tu@email.com', type: TextInputType.emailAddress),
-                const SizedBox(height: 14),
-                AuthField(ctrl: _passCtrl, label: 'Contraseña',
-                    hint: 'Mínimo 6 caracteres', obscure: true, onSubmit: _submit),
+                AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AuthField(ctrl: _nameCtrl, label: 'Nombre', hint: 'Tu nombre',
+                          autofillHints: const [AutofillHints.name]),
+                      const SizedBox(height: 14),
+                      AuthField(ctrl: _emailCtrl, label: 'Email',
+                          hint: 'tu@email.com', type: TextInputType.emailAddress,
+                          autofillHints: const [AutofillHints.email]),
+                      const SizedBox(height: 14),
+                      AuthField(ctrl: _passCtrl, label: 'Contraseña',
+                          hint: 'Mínimo 6 caracteres', obscure: true, onSubmit: _submit,
+                          autofillHints: const [AutofillHints.newPassword]),
+                    ],
+                  ),
+                ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Text(_error!, style: TextStyle(color: c.warn, fontSize: 13)),

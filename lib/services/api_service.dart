@@ -147,6 +147,21 @@ class AuthService {
 
     final p = await SharedPreferences.getInstance();
     await p.remove(_keyUser);
+    // Nota: el email recordado (_keyRememberedEmail) NO se borra al hacer
+    // logout, para que la próxima vez que se abra la app siga rellenado.
+  }
+
+  // ── EMAIL RECORDADO (para rellenar el login la próxima vez) ────
+  static const _keyRememberedEmail = 'remembered_email';
+
+  Future<void> saveRememberedEmail(String email) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString(_keyRememberedEmail, email);
+  }
+
+  Future<String?> loadRememberedEmail() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getString(_keyRememberedEmail);
   }
 
   // ── INTERNO ────────────────────────────────────────────────────

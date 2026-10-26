@@ -223,6 +223,7 @@ class _FrasesScreenState extends State<FrasesScreen> {
       settings: widget.settings,
       userToken: widget.user?.token,
       hasVoice: widget.user?.hasVoice ?? false,
+      userId: widget.user?.userId,
     );
 
     if (!ok && mounted) setState(() => _activeIndex = null);
@@ -378,12 +379,16 @@ class _FrasesScreenState extends State<FrasesScreen> {
             )
                 : GridView.builder(
               padding: const EdgeInsets.all(14),
+              // Nº de columnas según ancho disponible en vez de fijo a 2,
+              // para aprovechar mejor pantallas grandes (tablet).
               gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+              const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 260,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                childAspectRatio: 1.65,
+                // Un poco más altas que anchas para que quepa letra más
+                // grande sin recortar frases largas.
+                childAspectRatio: 1.35,
               ),
               itemCount: frases.length,
               itemBuilder: (_, i) {
@@ -563,17 +568,17 @@ class _FraseTileState extends State<_FraseTile>
                         size: 12, color: _accent.withValues(alpha: 0.6)),
                   ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
                   child: Center(
-                    child: Text(
+                    child: AutoSizeCardText(
                       widget.frase.texto,
-                      textAlign: TextAlign.center,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 4,
+                      minFontSize: 13,
+                      maxFontSize: 20,
                       style: TextStyle(
                         color: c.textPrimary,
-                        fontSize: 13,
-                        height: 1.4,
+                        height: 1.3,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),

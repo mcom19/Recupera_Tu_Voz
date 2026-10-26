@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/app_settings.dart';
 import '../models/voz_emocion.dart';
 import 'api_service.dart';
+import 'audio_cache_service.dart';
 
 class TtsService {
   final VoiceApiService _api = VoiceApiService();
@@ -41,6 +43,9 @@ class TtsService {
     required String? userToken,
     required bool hasVoice,
     VozEmocion emocion = VozEmocion.neutral,
+    // Necesario para el caché de audio (namespacing por usuario). Si no se
+    // pasa, simplemente no se cachea nada — sigue funcionando igual que antes.
+    String? userId,
   }) async {
     // ── Bloqueo: ignorar si ya está procesando ────────────────────
     if (_isSpeaking) return false;
@@ -48,11 +53,26 @@ class TtsService {
 
     try {
       if (userToken != null && hasVoice) {
-        final bytes = await _api.synthesize(
-          token: userToken,
-          text: text,
-          speed: (settings.velocidad + 0.5).clamp(0.5, 2.0),
-        );
+        final speed = (settings.velocidad + 0.5).clamp(0.5, 2.0);
+
+        // ── Caché: si ya se sintetizó este texto con esta voz/velocidad,
+        // reproducirlo al instante en vez de volver a llamar al backend
+        // (la síntesis con OpenVoice puede tardar hasta 60s).
+        Uint8List? bytes;
+        if (userId != null) {
+          bytes = await AudioCacheService.get(userId: userId, text: text, speed: speed);
+        }
+
+        if (bytes == null) {
+          bytes = await _api.synthesize(token: userToken, text: text, speed: speed);
+          if (userId != null) {
+            // No hace falta esperar a que termine de escribir en disco.
+            unawaited(AudioCacheService.put(
+              userId: userId, text: text, speed: speed, bytes: bytes,
+            ));
+          }
+        }
+
         await _playBytes(bytes, volume: settings.volumen);
         _isSpeaking = false;
         onDone?.call();

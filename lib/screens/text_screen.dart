@@ -88,6 +88,7 @@ class _TextScreenState extends State<TextScreen> {
       userToken: widget.user?.token,
       hasVoice: widget.user?.hasVoice ?? false,
       emocion: _emocion,
+      userId: widget.user?.userId,
     );
   }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show TextInput;
 import 'package:google_sign_in/google_sign_in.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
@@ -47,6 +48,15 @@ class _LoginScreenState extends State<LoginScreen> {
       _googleSub = _googleAuth.onCurrentUserChanged.listen(_onWebGoogleUser);
     }
     _trySilentLogin();
+    _loadRememberedEmail();
+  }
+
+  // ── Rellena el email recordado del último login ─────
+  Future<void> _loadRememberedEmail() async {
+    final email = await AuthService().loadRememberedEmail();
+    if (email != null && mounted) {
+      setState(() => _emailCtrl.text = email);
+    }
   }
 
   Future<void> _onWebGoogleUser(GoogleSignInAccount? account) async {
@@ -93,7 +103,13 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() { _loading = true; _error = null; });
 
     try {
-      await widget.onLogin(_emailCtrl.text.trim(), _passCtrl.text);
+      final email = _emailCtrl.text.trim();
+      await widget.onLogin(email, _passCtrl.text);
+      // Login correcto: recordamos el email para la próxima vez y avisamos
+      // al gestor de contraseñas del sistema (Keychain/Google/etc.) de que
+      // puede ofrecer guardar la contraseña.
+      await AuthService().saveRememberedEmail(email);
+      TextInput.finishAutofillContext();
     } catch (e) {
       if (mounted) setState(() => _error = _parseError(e));
     } finally {
@@ -191,19 +207,32 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 40),
 
                 // ── Campos email/contraseña ─────────────────────
-                AuthField(
-                  ctrl: _emailCtrl,
-                  label: 'Email',
-                  hint: 'tu@email.com',
-                  type: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 14),
-                AuthField(
-                  ctrl: _passCtrl,
-                  label: 'Contraseña',
-                  hint: '••••••••',
-                  obscure: true,
-                  onSubmit: _submit,
+                // AutofillGroup: le dice al gestor de contraseñas del
+                // sistema (Keychain en iOS/Mac, gestor de Google en
+                // Android/Chrome) que estos campos van juntos, para que
+                // pueda ofrecer autocompletar y guardar el login.
+                AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AuthField(
+                        ctrl: _emailCtrl,
+                        label: 'Email',
+                        hint: 'tu@email.com',
+                        type: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                      ),
+                      const SizedBox(height: 14),
+                      AuthField(
+                        ctrl: _passCtrl,
+                        label: 'Contraseña',
+                        hint: '••••••••',
+                        obscure: true,
+                        onSubmit: _submit,
+                        autofillHints: const [AutofillHints.password],
+                      ),
+                    ],
+                  ),
                 ),
 
                 if (_error != null) ...[

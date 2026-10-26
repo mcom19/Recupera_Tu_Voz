@@ -347,6 +347,81 @@ class PrimaryButton extends StatelessWidget {
   }
 }
 
+// ── Responsive: limita el ancho del contenido en tablets ──────────
+/// Centra el contenido y le pone un ancho máximo, para que en tablets
+/// (o cualquier pantalla ancha) los formularios y botones no se estiren
+/// de borde a borde como una tarjeta gigante. En móvil, con ancho menor
+/// a [maxWidth], no cambia nada respecto a como estaba.
+class ResponsiveBody extends StatelessWidget {
+  final Widget child;
+  final double maxWidth;
+
+  const ResponsiveBody({super.key, required this.child, this.maxWidth = 640});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: child,
+      ),
+    );
+  }
+}
+
+// ── Texto que se adapta al tamaño de su tarjeta ────────────────────
+/// Ajusta el tamaño de letra al espacio disponible, dentro de un rango
+/// [minFontSize]..[maxFontSize]: frases cortas se ven grandes, frases
+/// largas se encogen lo justo para caber sin recortarse. Pensado para
+/// usuarios que agradecen letra más grande cuando el texto lo permite
+/// (la app la usan sobre todo personas mayores).
+class AutoSizeCardText extends StatelessWidget {
+  final String text;
+  final TextStyle style;
+  final double minFontSize;
+  final double maxFontSize;
+  final int maxLines;
+  final TextAlign textAlign;
+
+  const AutoSizeCardText(
+    this.text, {
+    super.key,
+    required this.style,
+    this.minFontSize = 12,
+    this.maxFontSize = 20,
+    this.maxLines = 4,
+    this.textAlign = TextAlign.center,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double fontSize = maxFontSize;
+        while (fontSize > minFontSize) {
+          final painter = TextPainter(
+            text: TextSpan(text: text, style: style.copyWith(fontSize: fontSize)),
+            textAlign: textAlign,
+            textDirection: Directionality.of(context),
+            maxLines: maxLines,
+          )..layout(maxWidth: constraints.maxWidth);
+          final cabe = !painter.didExceedMaxLines &&
+              painter.height <= constraints.maxHeight;
+          if (cabe) break;
+          fontSize -= 1;
+        }
+        return Text(
+          text,
+          textAlign: textAlign,
+          maxLines: maxLines,
+          overflow: TextOverflow.ellipsis,
+          style: style.copyWith(fontSize: fontSize),
+        );
+      },
+    );
+  }
+}
+
 // ── Auth widgets (usados en login/register) ───────────────────────
 class AuthField extends StatelessWidget {
   final TextEditingController ctrl;
@@ -354,6 +429,7 @@ class AuthField extends StatelessWidget {
   final bool obscure;
   final TextInputType? type;
   final VoidCallback? onSubmit;
+  final Iterable<String>? autofillHints;
 
   const AuthField({super.key,
     required this.ctrl,
@@ -362,6 +438,7 @@ class AuthField extends StatelessWidget {
     this.obscure = false,
     this.type,
     this.onSubmit,
+    this.autofillHints,
   });
 
   @override
@@ -389,6 +466,7 @@ class AuthField extends StatelessWidget {
             controller: ctrl,
             obscureText: obscure,
             keyboardType: type,
+            autofillHints: autofillHints,
             onSubmitted: onSubmit != null ? (_) => onSubmit!() : null,
             style: TextStyle(color: c.textPrimary, fontSize: 15),
             decoration: InputDecoration(
