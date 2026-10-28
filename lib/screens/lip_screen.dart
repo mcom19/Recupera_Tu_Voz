@@ -79,11 +79,17 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final ctrl = _camCtrl;
-    if (ctrl == null || !ctrl.value.isInitialized) return;
+    // En web, la pestaña pasa a "inactive" solo con que la ventana pierda
+    // el foco: si liberamos ahí la cámara, el preview queda apuntando a un
+    // controlador liberado (CameraException "Disposed CameraController").
+    if (kIsWeb) return;
     if (state == AppLifecycleState.inactive) {
+      final ctrl = _camCtrl;
+      if (ctrl == null || _recording) return;
+      // Quitar primero el controlador de la pantalla y luego liberarlo.
+      setState(() { _camCtrl = null; _cameraReady = false; });
       ctrl.dispose();
-    } else if (state == AppLifecycleState.resumed) {
+    } else if (state == AppLifecycleState.resumed && _camCtrl == null) {
       _initCamera();
     }
   }
@@ -150,8 +156,11 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
   }
 
   // ── Grabación ──────────────────────────────────────────────────
+  DateTime? _recStart;
+
   Future<void> _startRecording() async {
     if (_camCtrl == null || !_cameraReady || _recording) return;
+    _recStart = DateTime.now();
     if (_state == _LipState.processing) return;
 
     setState(() {
@@ -185,6 +194,9 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
       _recording = false;
       _state = _LipState.processing;
     });
+
+    final durMs = _recStart == null ? 0 : DateTime.now().difference(_recStart!).inMilliseconds;
+    debugPrint('[LIP] grabación: $durMs ms');
 
     XFile? videoFile;
     try {
@@ -279,6 +291,7 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
       }
 
       final j = jsonDecode(body) as Map<String, dynamic>;
+      debugPrint('[LIP] respuesta servicio local: $body (vídeo: ${videoBytes.length} bytes)');
       final texto = (j['text'] as String? ?? '').trim();
       final t = (j['tiempos'] as Map?) ?? {};
       _infoPrueba = 'Leído en ${((j['ms'] as num? ?? 0) / 1000).toStringAsFixed(1)} s · '
@@ -289,9 +302,11 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
         if (mounted) {
           setState(() {
             _state = _LipState.error;
+            final diag = '(fotogramas: ${j['fotogramas'] ?? '-'}, con cara: ${j['con_cara'] ?? '-'}, '
+                'movimiento: ${j['movimiento'] ?? '-'}, vídeo: ${(videoBytes.length / 1024).round()} KB)';
             _errorMsg = j['motivo'] == 'muy_corto'
-                ? 'La grabación es demasiado corta.'
-                : 'No he visto movimiento de labios. Vuelve a intentarlo.';
+                ? 'La grabación es demasiado corta. $diag'
+                : 'No he visto movimiento de labios. Vuelve a intentarlo. $diag';
           });
         }
         return;
@@ -574,10 +589,12 @@ class _LipScreenState extends State<LipScreen> with WidgetsBindingObserver {
       );
     }
 
-    return GestureDetector(
-      onTapDown: (_) => _startRecording(),
-      onTapUp: (_) { if (_recording) _stopAndSend(); },
-      onTapCancel: () { if (_recording) _stopAndSend(); },
+    // Listener (no GestureDetector): con onTapCancel, un pequeño movimiento
+    // del ratón o del dedo mientras se mantiene pulsado cortaba la grabación.
+    return Listener(
+      onPointerDown: (_) => _startRecording(),
+      onPointerUp: (_) { if (_recording) _stopAndSend(); },
+      onPointerCancel: (_) { if (_recording) _stopAndSend(); },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: _recording ? 72 : 80,

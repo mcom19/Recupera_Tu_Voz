@@ -73,6 +73,17 @@ class ColaboradoresScreen extends StatelessWidget {
                 'empresarial.',
             color: AppColors.blueLight,
           ),
+          const SizedBox(height: 12),
+          _EntidadCard(
+            logoAsset: 'assets/logos/alamur.png',
+            nombre: 'ALAMUR',
+            categoria: 'Asociación de pacientes',
+            descripcion: 'Asociación de Laringectomizados de la Región de '
+                'Murcia "San Blas". Acompaña a las personas '
+                'laringectomizadas y a sus familias, y colabora con el '
+                'proyecto acercándolo a quienes más lo necesitan.',
+            color: AppColors.purpleLight,
+          ),
 
           const SizedBox(height: 26),
           Container(
@@ -146,6 +157,15 @@ class _EntidadCard extends StatelessWidget {
                   logoAsset,
                   fit: BoxFit.contain,
                   filterQuality: FilterQuality.high,
+                  // Si aún no está el logo en assets/logos/, se muestra el nombre.
+                  errorBuilder: (_, __, ___) => Text(
+                    nombre,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ),
             ),

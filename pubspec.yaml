@@ -46,6 +46,7 @@ flutter:
     - assets/images/appbar.png
     - assets/data/frases_base.json
     - assets/logos/
+    - assets/icons/
   fonts:
     - family: Montserrat
       fonts:
