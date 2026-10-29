@@ -30,7 +30,7 @@ const String kServerUrl = String.fromEnvironment(
 //  · Emulador Android:             http://10.0.2.2:8002
 //  · Móvil real en la misma wifi:  http://<IPv4 del PC>:8002
 const bool kLipreadingLocal = true;
-const String kLipreadingLocalUrl = 'http://localhost:8002';
+const String kLipreadingLocalUrl = 'http://192.168.0.112:8002';
 
 /// Cabecera necesaria porque el backend está detrás de un túnel ngrok
 /// gratuito: sin ella, ngrok devuelve una página HTML de aviso en vez de
